@@ -10,6 +10,15 @@
     <link rel="shortcut icon" type="image/jpg" href="gastorade.jpg">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="gastorade.jpg">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-G0JQ7P64MS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-G0JQ7P64MS');
+    </script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -228,7 +237,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="danger-zone">
             <h3>Zona de Peligro</h3>
             <button @click="resetData()" class="danger-button">
@@ -237,7 +246,7 @@
         </div>
     </div>
     <footer class="app-footer">
-        <p>Calcula tus gastos en tu moneda local.</p>
+        <p>Calcula y organiza tus gastos en el extranjero en tu moneda local.</p>
         <p>Hecho por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</p>
     </footer>
 </body>
