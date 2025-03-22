@@ -516,3 +516,26 @@ button.primary {
 .highlight-flash {
     animation: highlightFlash 1s ease-out;
 }
+
+.app-footer {
+    margin-top: 48px;
+    padding: 24px;
+    text-align: center;
+    color: #666;
+    border-top: 1px solid #eee;
+}
+
+.app-footer p {
+    font-size: 0.9em;
+}
+
+.app-footer a {
+    color: #2196f3;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.app-footer a:hover {
+    color: #1976d2;
+    text-decoration: underline;
+}

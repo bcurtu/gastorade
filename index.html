@@ -170,8 +170,8 @@
                                     <div class="expense-meta">
                                         <span x-text="formatTime(expense.date)"></span>
                                         <span x-show="expense.units > 1" x-text="expense.units + ' unidades'"></span>
-                                        <button 
-                                            x-show="expense.coords" 
+                                        <button
+                                            x-show="expense.coords"
                                             @click.stop="showExpenseLocation(expense)"
                                             class="map-button"
                                             :class="{ 'active': expense.showMap }"
@@ -226,5 +226,9 @@
             </div>
         </div>
     </div>
+    <footer class="app-footer">
+        <p>Calcula tus gastos en tu moneda local.</p>
+        <p>Hecho por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</p>
+    </footer>
 </body>
 </html>
