@@ -3,10 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="description" content="Conversor de divisas y gestor de gastos para viajes">
     <title>Gastorade</title>
+    <link rel="icon" type="image/jpg" href="gastorade.jpg">
+    <link rel="shortcut icon" type="image/jpg" href="gastorade.jpg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="gastorade.jpg">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
 </head>
 <body>
     <div class="app-container" x-data="expenseCalculator()">
@@ -14,13 +36,30 @@
         <div class="header">
             <h1>Gastorade</h1>
             <div class="exchange-rate">
-                <span>Tipo de cambio: 1 THB = <span x-text="exchangeRate.toFixed(3)"></span>€</span>
-                <button @click="showRateEditor = !showRateEditor">Editar</button>
+                <span>Tipo de cambio: 1 <span x-text="currencies.source.code"></span> = <span x-text="exchangeRate.toFixed(3)"></span><span x-text="currencies.target.symbol"></span></span>
+                <div class="header-buttons">
+                    <button @click="showRateEditor = !showRateEditor">Editar tasa</button>
+                    <button @click="showCurrencyEditor = !showCurrencyEditor">Editar monedas</button>
+                </div>
             </div>
 
             <div x-show="showRateEditor" class="rate-editor">
                 <input type="number" step="0.001" x-model="exchangeRate">
                 <button @click="saveExchangeRate(); showRateEditor = false">Guardar</button>
+            </div>
+
+            <div x-show="showCurrencyEditor" class="currency-editor">
+                <div class="currency-input">
+                    <label>Moneda origen:</label>
+                    <input type="text" x-model="currencies.source.code" placeholder="THB">
+                    <input type="text" x-model="currencies.source.symbol" placeholder="฿">
+                </div>
+                <div class="currency-input">
+                    <label>Moneda destino:</label>
+                    <input type="text" x-model="currencies.target.code" placeholder="EUR">
+                    <input type="text" x-model="currencies.target.symbol" placeholder="€">
+                </div>
+                <button @click="saveCurrencies()">Guardar</button>
             </div>
         </div>
 
@@ -28,24 +67,24 @@
         <div class="expense-calculator" x-show="!editingExpenseId">
             <h2>Nuevo Gasto</h2>
             <div class="input-group">
-                <label>Cantidad (THB)</label>
-                <input type="number" x-model="newExpense.amount" @input="updateConversion()">
-                <span x-text="'= ' + convertedAmount + '€'"></span>
-            </div>
-
-            <div class="input-group">
-                <label>Unidades</label>
-                <div class="units-control">
-                    <button @click="decrementUnits()">-</button>
-                    <span x-text="newExpense.units"></span>
-                    <button @click="incrementUnits()">+</button>
+                <label>Cantidad (<span x-text="currencies.source.code"></span>)</label>
+                <div class="expense-input-row">
+                    <div class="amount-input">
+                        <input type="number" x-model="newExpense.amount" @input="updateConversion()">
+                        <span class="converted-amount" x-text="'= ' + convertedAmount + currencies.target.symbol"></span>
+                    </div>
+                    <div class="units-control">
+                        <button @click="decrementUnits()">-</button>
+                        <span x-text="newExpense.units"></span>
+                        <button @click="incrementUnits()">+</button>
+                    </div>
                 </div>
             </div>
 
             <div class="total">
                 <h3>TOTAL</h3>
-                <div x-text="formatThb(newExpense.amount * newExpense.units) + ' THB'"></div>
-                <div x-text="'(' + formatEur(newExpense.amount * newExpense.units * exchangeRate) + '€)'"></div>
+                <div x-text="formatSourceAmount(newExpense.amount * newExpense.units) + ' ' + currencies.source.symbol"></div>
+                <div x-text="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ' ' + currencies.target.symbol + ')'"></div>
             </div>
 
             <div class="action-buttons">
@@ -58,24 +97,32 @@
         <div class="expense-calculator" x-show="editingExpenseId">
             <h2>Editar Gasto</h2>
             <div class="input-group">
-                <label>Cantidad (THB)</label>
-                <input type="number" x-model="newExpense.amount" @input="updateConversion()">
-                <span x-text="'= ' + convertedAmount + '€'"></span>
+                <label>Cantidad (<span x-text="currencies.source.code"></span>)</label>
+                <div class="expense-input-row">
+                    <div class="amount-input">
+                        <input type="number" x-model="newExpense.amount" @input="updateConversion()">
+                        <span class="converted-amount" x-text="'= ' + convertedAmount + currencies.target.symbol"></span>
+                    </div>
+                    <div class="units-control">
+                        <button @click="decrementUnits()">-</button>
+                        <span x-text="newExpense.units"></span>
+                        <button @click="incrementUnits()">+</button>
+                    </div>
+                </div>
             </div>
 
             <div class="input-group">
-                <label>Unidades</label>
-                <div class="units-control">
-                    <button @click="decrementUnits()">-</button>
-                    <span x-text="newExpense.units"></span>
-                    <button @click="incrementUnits()">+</button>
+                <label>Fecha y Hora</label>
+                <div class="datetime-control">
+                    <input type="date" x-model="newExpense.dateInput">
+                    <input type="time" x-model="newExpense.timeInput">
                 </div>
             </div>
 
             <div class="total">
                 <h3>TOTAL</h3>
-                <div x-text="formatThb(newExpense.amount * newExpense.units) + ' THB'"></div>
-                <div x-text="'(' + formatEur(newExpense.amount * newExpense.units * exchangeRate) + '€)'"></div>
+                <div x-text="formatSourceAmount(newExpense.amount * newExpense.units) + ' ' + currencies.source.symbol"></div>
+                <div x-text="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ' ' + currencies.target.symbol + ')'"></div>
             </div>
 
             <div class="action-buttons">
@@ -90,43 +137,92 @@
 
             <template x-for="(day, index) in groupedExpenses" :key="index">
                 <div class="day-group">
-                    <div class="day-header">
-                        <h3 x-text="day.date"></h3>
-                        <span x-text="'TOTAL: ' + formatEur(day.totalEur) + '€'"></span>
+                    <div class="day-header" @click="toggleDayExpansion(day.dateKey)">
+                        <div class="day-header-content">
+                            <span class="expand-icon" x-text="isDayExpanded(day.dateKey) ? '▼' : '▶'"></span>
+                            <h3 x-text="day.date"></h3>
+                        </div>
+                        <span x-text="'TOTAL: ' + formatTargetAmount(day.totalTarget) + ' ' + currencies.target.symbol"></span>
                     </div>
 
-                    <template x-for="expense in day.expenses" :key="expense.id">
-                        <div class="expense-item">
-                            <div class="expense-tag" x-text="expense.tag || '🏷️'"></div>
-                            <div class="expense-details">
-                                <div class="expense-amount">
-                                    <span x-text="formatThb(expense.amount * expense.units) + ' THB'"></span>
-                                    <span x-text="formatEur(expense.amount * expense.units * expense.exchangeRate) + '€'"></span>
+                    <div class="day-expenses" x-show="isDayExpanded(day.dateKey)">
+                        <template x-for="expense in day.expenses" :key="expense.id">
+                            <div class="expense-item">
+                                <div class="expense-tag" @click="toggleTagEditor(expense.id)" x-text="expense.tag || '🏷️'"></div>
+                                <div x-show="showTagEditor === expense.id" class="tag-editor">
+                                    <div class="tag-categories">
+                                        <template x-for="category in tagCategories" :key="category.emoji">
+                                            <button
+                                                @click="saveTag(expense.id, category)"
+                                                :title="category.name"
+                                                class="tag-button"
+                                            >
+                                                <span x-text="category.emoji"></span>
+                                            </button>
+                                        </template>
+                                    </div>
                                 </div>
-                                <div class="expense-meta">
-                                    <span x-text="formatTime(expense.date)"></span>
-                                    <span x-show="expense.location">• <span x-text="expense.location"></span></span>
+                                <div class="expense-details">
+                                    <div class="expense-amount">
+                                        <span x-text="formatSourceAmount(expense.amount * expense.units) + ' ' + currencies.source.symbol"></span>
+                                        <span class="eur" x-text="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ' ' + currencies.target.symbol + ')'"></span>
+                                    </div>
+                                    <div class="expense-meta">
+                                        <span x-text="formatTime(expense.date)"></span>
+                                        <span x-show="expense.units > 1" x-text="expense.units + ' unidades'"></span>
+                                        <button 
+                                            x-show="expense.coords" 
+                                            @click.stop="showExpenseLocation(expense)"
+                                            class="map-button"
+                                            :class="{ 'active': expense.showMap }"
+                                        >
+                                            📍
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="expense-units" x-show="expense.units > 1">
-                                    <span x-text="'👤' + expense.units"></span>
+                                <div x-show="expense.coords && expense.showMap" class="expense-map">
+                                    <div :id="'map-' + expense.id" class="map-container"></div>
+                                </div>
+                                <div class="expense-actions">
+                                    <button @click="editExpense(expense.id)">Editar</button>
+                                    <button @click="deleteExpense(expense.id)">Borrar</button>
                                 </div>
                             </div>
-                            <div class="expense-actions">
-                                <button @click="editExpense(expense.id)">Editar</button>
-                                <button @click="deleteExpense(expense.id)">Borrar</button>
-                            </div>
-                            <div class="tag-editor" x-show="showTagEditor === expense.id">
-                                <input type="text" x-model="tagInput">
-                                <button @click="saveTag(expense.id)">Guardar</button>
-                            </div>
-                            <button class="tag-button" @click="toggleTagEditor(expense.id)" x-show="!expense.tag">+ Añadir etiqueta</button>
-                        </div>
-                    </template>
+                        </template>
+                    </div>
                 </div>
             </template>
 
             <div class="empty-state" x-show="expenses.length === 0">
                 <p>No hay gastos guardados todavía.</p>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="analytics-section">
+                <h2>Resumen Total</h2>
+                <div class="total-summary">
+                    <div class="total-amount">
+                        <span x-text="formatSourceAmount(analytics.totalSource) + ' ' + currencies.source.symbol"></span>
+                        <span class="eur" x-text="'(' + formatTargetAmount(analytics.totalTarget) + ' ' + currencies.target.symbol + ')'"></span>
+                    </div>
+                </div>
+
+                <h3>Gastos por Etiqueta</h3>
+                <div class="tag-analytics">
+                    <template x-for="tag in analytics.tagsSorted" :key="tag.emoji">
+                        <div class="tag-summary">
+                            <div class="tag-header">
+                                <span class="tag-emoji" x-text="tag.emoji"></span>
+                                <span class="tag-name" x-text="tag.name"></span>
+                                <span class="tag-count" x-text="tag.count + ' gastos'"></span>
+                            </div>
+                            <div class="tag-amounts">
+                                <span x-text="formatSourceAmount(tag.totalSource) + ' ' + currencies.source.symbol"></span>
+                                <span class="eur" x-text="'(' + formatTargetAmount(tag.totalTarget) + ' ' + currencies.target.symbol + ')'"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
     </div>
