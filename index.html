@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gastorade</title>
+    <link rel="stylesheet" href="style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <div class="app-container" x-data="expenseCalculator()">
+        <!-- Configuración de tipo de cambio -->
+        <div class="header">
+            <h1>Gastorade</h1>
+            <div class="exchange-rate">
+                <span>Tipo de cambio: 1 THB = <span x-text="exchangeRate.toFixed(3)"></span>€</span>
+                <button @click="showRateEditor = !showRateEditor">Editar</button>
+            </div>
+
+            <div x-show="showRateEditor" class="rate-editor">
+                <input type="number" step="0.001" x-model="exchangeRate">
+                <button @click="saveExchangeRate(); showRateEditor = false">Guardar</button>
+            </div>
+        </div>
+
+        <!-- Calculadora de nuevo gasto -->
+        <div class="expense-calculator" x-show="!editingExpenseId">
+            <h2>Nuevo Gasto</h2>
+            <div class="input-group">
+                <label>Cantidad (THB)</label>
+                <input type="number" x-model="newExpense.amount" @input="updateConversion()">
+                <span x-text="'= ' + convertedAmount + '€'"></span>
+            </div>
+
+            <div class="input-group">
+                <label>Unidades</label>
+                <div class="units-control">
+                    <button @click="decrementUnits()">-</button>
+                    <span x-text="newExpense.units"></span>
+                    <button @click="incrementUnits()">+</button>
+                </div>
+            </div>
+
+            <div class="total">
+                <h3>TOTAL</h3>
+                <div x-text="formatThb(newExpense.amount * newExpense.units) + ' THB'"></div>
+                <div x-text="'(' + formatEur(newExpense.amount * newExpense.units * exchangeRate) + '€)'"></div>
+            </div>
+
+            <div class="action-buttons">
+                <button @click="saveExpense()" class="primary">Guardar</button>
+                <button @click="resetForm()">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Modo edición -->
+        <div class="expense-calculator" x-show="editingExpenseId">
+            <h2>Editar Gasto</h2>
+            <div class="input-group">
+                <label>Cantidad (THB)</label>
+                <input type="number" x-model="newExpense.amount" @input="updateConversion()">
+                <span x-text="'= ' + convertedAmount + '€'"></span>
+            </div>
+
+            <div class="input-group">
+                <label>Unidades</label>
+                <div class="units-control">
+                    <button @click="decrementUnits()">-</button>
+                    <span x-text="newExpense.units"></span>
+                    <button @click="incrementUnits()">+</button>
+                </div>
+            </div>
+
+            <div class="total">
+                <h3>TOTAL</h3>
+                <div x-text="formatThb(newExpense.amount * newExpense.units) + ' THB'"></div>
+                <div x-text="'(' + formatEur(newExpense.amount * newExpense.units * exchangeRate) + '€)'"></div>
+            </div>
+
+            <div class="action-buttons">
+                <button @click="updateExpense()" class="primary">Actualizar</button>
+                <button @click="cancelEdit()">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Lista de gastos -->
+        <div class="expenses-list">
+            <h2>Gastos Guardados</h2>
+
+            <template x-for="(day, index) in groupedExpenses" :key="index">
+                <div class="day-group">
+                    <div class="day-header">
+                        <h3 x-text="day.date"></h3>
+                        <span x-text="'TOTAL: ' + formatEur(day.totalEur) + '€'"></span>
+                    </div>
+
+                    <template x-for="expense in day.expenses" :key="expense.id">
+                        <div class="expense-item">
+                            <div class="expense-tag" x-text="expense.tag || '🏷️'"></div>
+                            <div class="expense-details">
+                                <div class="expense-amount">
+                                    <span x-text="formatThb(expense.amount * expense.units) + ' THB'"></span>
+                                    <span x-text="formatEur(expense.amount * expense.units * expense.exchangeRate) + '€'"></span>
+                                </div>
+                                <div class="expense-meta">
+                                    <span x-text="formatTime(expense.date)"></span>
+                                    <span x-show="expense.location">• <span x-text="expense.location"></span></span>
+                                </div>
+                                <div class="expense-units" x-show="expense.units > 1">
+                                    <span x-text="'👤' + expense.units"></span>
+                                </div>
+                            </div>
+                            <div class="expense-actions">
+                                <button @click="editExpense(expense.id)">Editar</button>
+                                <button @click="deleteExpense(expense.id)">Borrar</button>
+                            </div>
+                            <div class="tag-editor" x-show="showTagEditor === expense.id">
+                                <input type="text" x-model="tagInput">
+                                <button @click="saveTag(expense.id)">Guardar</button>
+                            </div>
+                            <button class="tag-button" @click="toggleTagEditor(expense.id)" x-show="!expense.tag">+ Añadir etiqueta</button>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <div class="empty-state" x-show="expenses.length === 0">
+                <p>No hay gastos guardados todavía.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
