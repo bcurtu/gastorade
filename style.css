@@ -32,9 +32,8 @@ h1 {
 
 .exchange-rate {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .rate-editor {
@@ -501,6 +500,21 @@ button.primary {
     color: #666;
 }
 
+.update-rate {
+    background: #4caf50;
+    color: white;
+}
+
+.update-rate:hover {
+    background: #45a049;
+}
+
+.last-update {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 4px;
+}
+
 @keyframes highlightFlash {
     0% {
         background-color: #fff;
@@ -538,4 +552,35 @@ button.primary {
 .app-footer a:hover {
     color: #1976d2;
     text-decoration: underline;
+}
+
+.danger-zone {
+    margin-top: 48px;
+    padding: 24px;
+    background: #fff5f5;
+    border: 1px solid #ffebeb;
+    border-radius: 12px;
+}
+
+.danger-zone h3 {
+    color: #dc3545;
+    margin-bottom: 16px;
+}
+
+.danger-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.danger-button:hover {
+    background: #c82333;
+}
+
+.danger-button:active {
+    transform: translateY(1px);
 }

@@ -12,6 +12,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
         exchangeRate: parseFloat(localStorage.getItem('exchangeRate')) || 0.026,
+        lastRateUpdate: localStorage.getItem('lastRateUpdate') || null,
         showRateEditor: false,
         showCurrencyEditor: false,
         newExpense: {
@@ -57,6 +58,9 @@ document.addEventListener('alpine:init', () => {
             // Set today as expanded by default
             const today = new Date().toISOString().split('T')[0];
             this.expandedDays.add(today);
+
+            // Check if we need to update the exchange rate
+            this.checkExchangeRate();
         },
         
         // Métodos
@@ -279,6 +283,9 @@ document.addEventListener('alpine:init', () => {
             localStorage.setItem('targetCurrency', this.currencies.target.code);
             localStorage.setItem('targetCurrencySymbol', this.currencies.target.symbol);
             this.showCurrencyEditor = false;
+            
+            // Update exchange rate with new currencies
+            this.updateExchangeRate();
         },
 
         formatSourceAmount(amount) {
@@ -390,6 +397,45 @@ document.addEventListener('alpine:init', () => {
 
         get analytics() {
             return this.calculateAnalytics();
+        },
+        
+        resetData() {
+            if (confirm('¿Estás seguro de que quieres borrar todos los gastos? Esta acción no se puede deshacer.')) {
+                this.expenses = [];
+                localStorage.removeItem('expenses');
+                this.groupExpensesByDay();
+            }
+        },
+        
+        async checkExchangeRate() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Update if we don't have a rate or if it's from a previous day
+            if (!this.lastRateUpdate || this.lastRateUpdate !== today) {
+                await this.updateExchangeRate();
+            }
+        },
+
+        async updateExchangeRate() {
+            try {
+                const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${this.currencies.source.code}`);
+                const data = await response.json();
+                
+                if (data.rates && data.rates[this.currencies.target.code]) {
+                    this.exchangeRate = data.rates[this.currencies.target.code];
+                    this.lastRateUpdate = new Date().toISOString().split('T')[0];
+                    
+                    // Save to localStorage
+                    localStorage.setItem('exchangeRate', this.exchangeRate);
+                    localStorage.setItem('lastRateUpdate', this.lastRateUpdate);
+                    
+                    // Show success message
+                    alert(`Tipo de cambio actualizado: 1 ${this.currencies.source.code} = ${this.exchangeRate} ${this.currencies.target.code}`);
+                }
+            } catch (error) {
+                console.error('Error updating exchange rate:', error);
+                alert('No se pudo actualizar el tipo de cambio. Por favor, inténtalo más tarde.');
+            }
         },
     }));
 });

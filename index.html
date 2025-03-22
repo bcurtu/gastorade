@@ -40,6 +40,9 @@
                 <div class="header-buttons">
                     <button @click="showRateEditor = !showRateEditor">Editar tasa</button>
                     <button @click="showCurrencyEditor = !showCurrencyEditor">Editar monedas</button>
+                    <button @click="updateExchangeRate()" class="update-rate">
+                        Actualizar tasa
+                    </button>
                 </div>
             </div>
 
@@ -224,6 +227,13 @@
                     </template>
                 </div>
             </div>
+        </div>
+        
+        <div class="danger-zone">
+            <h3>Zona de Peligro</h3>
+            <button @click="resetData()" class="danger-button">
+                Borrar todos los gastos
+            </button>
         </div>
     </div>
     <footer class="app-footer">
