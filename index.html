@@ -44,32 +44,29 @@
         <!-- Configuración de tipo de cambio -->
         <div class="header">
             <h1>Gastorade</h1>
-            <div class="exchange-rate">
-                <span>Tipo de cambio: 1 <span x-text="currencies.source.code"></span> = <span x-text="exchangeRate.toFixed(3)"></span><span x-text="currencies.target.symbol"></span></span>
-                <div class="header-buttons">
-                    <button @click="showRateEditor = !showRateEditor">Editar tasa</button>
-                    <button @click="showCurrencyEditor = !showCurrencyEditor">Editar monedas</button>
-                    <button @click="updateExchangeRate()" class="update-rate">
-                        Actualizar tasa
-                    </button>
+            <div class="exchange-rate-section">
+                <div class="exchange-rate-display">
+                    <span>Tipo de cambio: 1 <span x-text="currencies.source.code"></span> = <strong x-text="formatExchangeRate(exchangeRate)"></strong><span x-text="currencies.target.symbol"></span></span>
+                    <button x-show="!expenses.length" class="link-button" @click="showCurrencyEditor = !showCurrencyEditor">editar</button>
                 </div>
-            </div>
-
-            <div x-show="showRateEditor" class="rate-editor">
-                <input type="number" step="0.001" x-model="exchangeRate">
-                <button @click="saveExchangeRate(); showRateEditor = false">Guardar</button>
             </div>
 
             <div x-show="showCurrencyEditor" class="currency-editor">
                 <div class="currency-input">
                     <label>Moneda origen:</label>
-                    <input type="text" x-model="currencies.source.code" placeholder="THB">
-                    <input type="text" x-model="currencies.source.symbol" placeholder="฿">
+                    <select x-model="currencies.source.code" @change="updateCurrencySymbol('source')">
+                        <template x-for="(currency, code) in supportedCurrencies" :key="code">
+                            <option :value="code" :selected="code === currencies.source.code" x-text="currency.name + ' (' + currency.symbol + ')'"></option>
+                        </template>
+                    </select>
                 </div>
                 <div class="currency-input">
                     <label>Moneda destino:</label>
-                    <input type="text" x-model="currencies.target.code" placeholder="EUR">
-                    <input type="text" x-model="currencies.target.symbol" placeholder="€">
+                    <select x-model="currencies.target.code" @change="updateCurrencySymbol('target')">
+                        <template x-for="(currency, code) in supportedCurrencies" :key="code">
+                            <option :value="code" :selected="code === currencies.target.code" x-text="currency.name + ' (' + currency.symbol + ')'"></option>
+                        </template>
+                    </select>
                 </div>
                 <button @click="saveCurrencies()">Guardar</button>
             </div>
@@ -246,7 +243,7 @@
         </div>
     </div>
     <footer class="app-footer">
-        <p>Calcula y organiza tus gastos en el extranjero en tu moneda local.</p>
+        <p>Simplifica tus viajes: Convierte y organiza tus gastos internacionales al instante en tu moneda local.</p>
         <p>Hecho por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</p>
     </footer>
 </body>
