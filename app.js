@@ -2,19 +2,24 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('expenseCalculator', () => ({
         // Estado
         supportedCurrencies: {
-            THB: { code: 'THB', symbol: '฿', name: 'Thai Baht' },
-            IDR: { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
+            EUR: { code: 'EUR', symbol: '€', name: 'Euro' },
             GBP: { code: 'GBP', symbol: '£', name: 'British Pound' },
             USD: { code: 'USD', symbol: '$', name: 'US Dollar' },
+            THB: { code: 'THB', symbol: '฿', name: 'Thai Baht' },
+            IDR: { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
+            MAD: { code: 'MAD', symbol: 'د.م.', name: 'Moroccan Dirham' },
             AED: { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham' },
             JPY: { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
             CNY: { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
-            EUR: { code: 'EUR', symbol: '€', name: 'Euro' },
             TRY: { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
             MYR: { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
             SGD: { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
             XOF: { code: 'XOF', symbol: 'CFA', name: 'West African CFA (Senegal)' },
-            MAD: { code: 'MAD', symbol: 'د.م.', name: 'Moroccan Dirham' }
+            HRK: { code: 'HRK', symbol: 'kn', name: 'Croatian Kuna' },
+            QAR: { code: 'QAR', symbol: 'ر.ق', name: 'Qatari Riyal' },
+            INR: { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+            MXN: { code: 'MXN', symbol: '$', name: 'Mexican Peso' },
+            COP: { code: 'COP', symbol: '$', name: 'Colombian Peso' }
         },
         currencies: {
             source: {
@@ -43,11 +48,12 @@ document.addEventListener('alpine:init', () => {
         tagCategories: [
             { emoji: '🍽️', name: 'Comida' },
             { emoji: '🍿', name: 'Snacks' },
-            { emoji: '🚌', name: 'Transporte' },
-            { emoji: '⛩️', name: 'Museo' },
-            { emoji: '🎯', name: 'Actividades' },
             { emoji: '🎁', name: 'Regalos' },
+            { emoji: '⛩️', name: 'Museo' },
+            { emoji: '🤿', name: 'Actividades' },
+            { emoji: '🚌', name: 'Transporte' },
             { emoji: '👕', name: 'Ropa' },
+            { emoji: '💊', name: 'Farmacia' },
             { emoji: '🏨', name: 'Hotel' }
         ],
         tagInput: '',
@@ -308,7 +314,7 @@ document.addEventListener('alpine:init', () => {
             // Update symbols before saving
             this.updateCurrencySymbol('source');
             this.updateCurrencySymbol('target');
-            
+
             localStorage.setItem('sourceCurrency', this.currencies.source.code);
             localStorage.setItem('sourceCurrencySymbol', this.currencies.source.symbol);
             localStorage.setItem('targetCurrency', this.currencies.target.code);

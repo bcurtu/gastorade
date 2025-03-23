@@ -203,59 +203,37 @@ button.primary {
 
 .expense-item {
     display: flex;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    position: relative;
+    flex-direction: column;
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
 }
 
-.expense-tag {
-    width: 32px;
-    height: 32px;
+.expense-item.editing {
+    background: #f5f5f5;
+}
+
+.expense-content {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    cursor: pointer;
-    border-radius: 50%;
-    background: #f8f9fa;
-    transition: background-color 0.2s;
-}
-
-.expense-tag:hover {
-    background: #e9ecef;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
 }
 
 .expense-details {
     flex: 1;
-    padding: 10px;
-    cursor: pointer;
-}
-
-.expense-details:hover {
-    background: #f8f9fa;
-    border-radius: 4px;
-}
-
-.expense-map {
-    width: 100%;
-    margin: 10px 0;
-    padding: 0 10px;
-}
-
-.map-container {
-    height: 200px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    min-width: 0;
 }
 
 .expense-amount {
-    font-size: 1.1rem;
+    font-size: 1rem;
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .expense-amount .eur {
@@ -264,11 +242,151 @@ button.primary {
 }
 
 .expense-meta {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 4px;
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.expense-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    align-items: flex-start;
+}
+
+.expense-actions button {
+    padding: 4px 8px;
+    border: none;
+    background: none;
+    color: #1976d2;
+    cursor: pointer;
+    font-size: 0.8rem;
+    border-radius: 4px;
+}
+
+.expense-actions button:hover {
+    background: #e3f2fd;
+}
+
+.expense-tag {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.expense-tag:hover {
+    background: #e0e0e0;
+}
+
+.tag-editor {
+    position: absolute;
+    left: 40px;
+    top: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 100;
+    padding: 8px;
+    min-width: max-content;
+}
+
+.tag-categories {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    width: max-content;
+}
+
+.tag-button {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    border-radius: 4px;
+    padding: 0;
+}
+
+.tag-button:hover {
+    background: #f5f5f5;
+}
+
+.tag-button span {
+    pointer-events: none;
+}
+
+.expense-edit-form {
+    width: 100%;
+}
+
+.expense-edit-form .input-group {
+    margin-bottom: 16px;
+}
+
+.expense-edit-form .total {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.expense-edit-form .total h3 {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
     color: #666;
-    font-size: 0.9em;
+}
+
+.expense-edit-form .action-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.expense-edit-form .action-buttons button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.expense-edit-form .action-buttons button.primary {
+    background: #1976d2;
+    color: white;
+}
+
+.expense-edit-form .action-buttons button:not(.primary) {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.expense-edit-form .action-buttons button:hover {
+    opacity: 0.9;
+}
+
+.expense-map {
+    width: 100%;
+    margin-top: 12px;
+}
+
+.map-container {
+    height: 200px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 }
 
 .map-button {
@@ -288,102 +406,6 @@ button.primary {
 .map-button.active {
     background: #e0e0e0;
     color: #2196f3;
-}
-
-.expense-actions {
-    width: 100%;
-    display: flex;
-    justify-content: flex-end;
-    gap: 5px;
-    margin-top: 10px;
-}
-
-.expense-actions button {
-    font-size: 0.8rem;
-    padding: 5px 10px;
-}
-
-.tag-editor {
-    position: absolute;
-    left: 40px;
-    top: 0;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    padding: 8px;
-    z-index: 100;
-}
-
-.tag-categories {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-}
-
-.tag-button {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    border: none;
-    background: #f8f9fa;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
-}
-
-.tag-button:hover {
-    background: #e9ecef;
-    transform: scale(1.05);
-}
-
-.datetime-control {
-    display: flex;
-    gap: 10px;
-}
-
-.datetime-control input {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-}
-
-.location-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    font-size: 0.9rem;
-}
-
-.location-info button.small {
-    padding: 4px 8px;
-    font-size: 0.8rem;
-    background: #3498db;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.location-info button.small:hover {
-    background: #2980b9;
-}
-
-#edit-map {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.header-buttons {
-    display: flex;
-    gap: 8px;
 }
 
 .currency-editor {
@@ -632,4 +654,51 @@ button.primary {
 
 .danger-button:active {
     transform: translateY(1px);
+}
+
+.datetime-control {
+    display: flex;
+    gap: 10px;
+}
+
+.datetime-control input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.location-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.location-info button.small {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.location-info button.small:hover {
+    background: #2980b9;
+}
+
+#edit-map {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 8px;
 }

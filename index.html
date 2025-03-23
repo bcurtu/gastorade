@@ -102,44 +102,6 @@
             </div>
         </div>
 
-        <!-- Modo edición -->
-        <div class="expense-calculator" x-show="editingExpenseId">
-            <h2>Editar Gasto</h2>
-            <div class="input-group">
-                <label>Cantidad (<span x-text="currencies.source.code"></span>)</label>
-                <div class="expense-input-row">
-                    <div class="amount-input">
-                        <input type="number" x-model="newExpense.amount" @input="updateConversion()">
-                        <span class="converted-amount" x-text="'= ' + convertedAmount + currencies.target.symbol"></span>
-                    </div>
-                    <div class="units-control">
-                        <button @click="decrementUnits()">-</button>
-                        <span x-text="newExpense.units"></span>
-                        <button @click="incrementUnits()">+</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label>Fecha y Hora</label>
-                <div class="datetime-control">
-                    <input type="date" x-model="newExpense.dateInput">
-                    <input type="time" x-model="newExpense.timeInput">
-                </div>
-            </div>
-
-            <div class="total">
-                <h3>TOTAL</h3>
-                <div x-text="formatSourceAmount(newExpense.amount * newExpense.units) + ' ' + currencies.source.symbol"></div>
-                <div x-text="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ' ' + currencies.target.symbol + ')'"></div>
-            </div>
-
-            <div class="action-buttons">
-                <button @click="updateExpense()" class="primary">Actualizar</button>
-                <button @click="cancelEdit()">Cancelar</button>
-            </div>
-        </div>
-
         <!-- Lista de gastos -->
         <div class="expenses-list">
             <h2>Gastos Guardados</h2>
@@ -156,45 +118,87 @@
 
                     <div class="day-expenses" x-show="isDayExpanded(day.dateKey)">
                         <template x-for="expense in day.expenses" :key="expense.id">
-                            <div class="expense-item">
-                                <div class="expense-tag" @click="toggleTagEditor(expense.id)" x-text="expense.tag || '🏷️'"></div>
-                                <div x-show="showTagEditor === expense.id" class="tag-editor">
-                                    <div class="tag-categories">
-                                        <template x-for="category in tagCategories" :key="category.emoji">
+                            <div class="expense-item" :class="{ 'editing': editingExpenseId === expense.id }">
+                                <!-- Normal view -->
+                                <div x-show="editingExpenseId !== expense.id" class="expense-content">
+                                    <div class="expense-tag" @click="toggleTagEditor(expense.id)">
+                                        <span x-text="expense.tag || '🏷️'"></span>
+                                    </div>
+                                    <div x-show="showTagEditor === expense.id" class="tag-editor">
+                                        <div class="tag-categories">
+                                            <template x-for="category in tagCategories" :key="category.emoji">
+                                                <button
+                                                    @click="saveTag(expense.id, category)"
+                                                    :title="category.name"
+                                                    class="tag-button"
+                                                >
+                                                    <span x-text="category.emoji"></span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <div class="expense-details">
+                                        <div class="expense-amount">
+                                            <span x-text="formatSourceAmount(expense.amount * expense.units) + ' ' + currencies.source.symbol"></span>
+                                            <span class="eur" x-text="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ' ' + currencies.target.symbol + ')'"></span>
+                                        </div>
+                                        <div class="expense-meta">
+                                            <span x-text="formatTime(expense.date)"></span>
+                                            <span x-show="expense.units > 1" x-text="expense.units + ' unidades'"></span>
                                             <button
-                                                @click="saveTag(expense.id, category)"
-                                                :title="category.name"
-                                                class="tag-button"
+                                                x-show="expense.coords"
+                                                @click.stop="showExpenseLocation(expense)"
+                                                class="map-button"
+                                                :class="{ 'active': expense.showMap }"
                                             >
-                                                <span x-text="category.emoji"></span>
+                                                📍
                                             </button>
-                                        </template>
+                                        </div>
+                                        <div x-show="expense.coords && expense.showMap" class="expense-map">
+                                            <div :id="'map-' + expense.id" class="map-container"></div>
+                                        </div>
+                                    </div>
+                                    <div class="expense-actions">
+                                        <button @click="editExpense(expense.id)">Editar</button>
+                                        <button @click="deleteExpense(expense.id)">Borrar</button>
                                     </div>
                                 </div>
-                                <div class="expense-details">
-                                    <div class="expense-amount">
-                                        <span x-text="formatSourceAmount(expense.amount * expense.units) + ' ' + currencies.source.symbol"></span>
-                                        <span class="eur" x-text="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ' ' + currencies.target.symbol + ')'"></span>
+
+                                <!-- Edit form -->
+                                <div x-show="editingExpenseId === expense.id" class="expense-edit-form">
+                                    <div class="input-group">
+                                        <label>Cantidad (<span x-text="currencies.source.code"></span>)</label>
+                                        <div class="expense-input-row">
+                                            <div class="amount-input">
+                                                <input type="number" x-model="newExpense.amount" @input="updateConversion()">
+                                                <span class="converted-amount" x-text="'= ' + convertedAmount + currencies.target.symbol"></span>
+                                            </div>
+                                            <div class="units-control">
+                                                <button @click="decrementUnits()">-</button>
+                                                <span x-text="newExpense.units"></span>
+                                                <button @click="incrementUnits()">+</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="expense-meta">
-                                        <span x-text="formatTime(expense.date)"></span>
-                                        <span x-show="expense.units > 1" x-text="expense.units + ' unidades'"></span>
-                                        <button
-                                            x-show="expense.coords"
-                                            @click.stop="showExpenseLocation(expense)"
-                                            class="map-button"
-                                            :class="{ 'active': expense.showMap }"
-                                        >
-                                            📍
-                                        </button>
+
+                                    <div class="input-group">
+                                        <label>Fecha y Hora</label>
+                                        <div class="datetime-control">
+                                            <input type="date" x-model="newExpense.dateInput">
+                                            <input type="time" x-model="newExpense.timeInput">
+                                        </div>
                                     </div>
-                                </div>
-                                <div x-show="expense.coords && expense.showMap" class="expense-map">
-                                    <div :id="'map-' + expense.id" class="map-container"></div>
-                                </div>
-                                <div class="expense-actions">
-                                    <button @click="editExpense(expense.id)">Editar</button>
-                                    <button @click="deleteExpense(expense.id)">Borrar</button>
+
+                                    <div class="total">
+                                        <h3>TOTAL</h3>
+                                        <div x-text="formatSourceAmount(newExpense.amount * newExpense.units) + ' ' + currencies.source.symbol"></div>
+                                        <div x-text="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ' ' + currencies.target.symbol + ')'"></div>
+                                    </div>
+
+                                    <div class="action-buttons">
+                                        <button @click="updateExpense()" class="primary">Actualizar</button>
+                                        <button @click="cancelEdit()">Cancelar</button>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -244,7 +248,7 @@
     </div>
     <footer class="app-footer">
         <p>Simplifica tus viajes: Convierte y organiza tus gastos internacionales al instante en tu moneda local.</p>
-        <p>Hecho por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</p>
+        <p>Creado por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</p>
     </footer>
 </body>
 </html>
