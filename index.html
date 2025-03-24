@@ -80,7 +80,7 @@
                 <div class="expense-input-row">
                     <div class="amount-input">
                         <input type="number" x-model="newExpense.amount" @input="updateConversion()">
-                        <span class="converted-amount" x-html="'= ' + formatTargetAmount(convertedAmount)"></span>
+                        <span class="converted-amount" x-text="formatTargetAmount(convertedAmount)"></span>
                     </div>
                     <div class="units-control">
                         <button @click="decrementUnits()">-</button>
@@ -121,49 +121,52 @@
                             <div class="expense-item" :class="{ 'editing': editingExpenseId === expense.id }">
                                 <!-- Normal view -->
                                 <div x-show="editingExpenseId !== expense.id" class="expense-content">
-                                    <div class="expense-tag" @click="toggleTagEditor(expense.id)">
-                                        <span x-text="expense.tag || '🏷️'"></span>
-                                    </div>
-                                    <div x-show="showTagEditor === expense.id" class="tag-editor">
-                                        <div class="tag-categories">
-                                            <template x-for="category in tagCategories" :key="category.emoji">
+                                    <div class="expense-main">
+                                        <div class="expense-tag" @click.stop="toggleTagEditor(expense.id)">
+                                            <span x-text="expense.tag || '🏷️'"></span>
+                                            <div x-show="showTagEditor === expense.id" class="tag-editor">
+                                                <div class="tag-categories">
+                                                    <template x-for="category in tagCategories" :key="category.emoji">
+                                                        <button
+                                                            @click.stop="saveTag(expense.id, category)"
+                                                            :title="category.name"
+                                                            class="tag-button"
+                                                        >
+                                                            <span x-text="category.emoji"></span>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="expense-details">
+                                            <div class="expense-top">
+                                                <div class="expense-amount">
+                                                    <span x-html="formatSourceAmount(expense.amount * expense.units)"></span>
+                                                    <span class="eur" x-html="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ')'"></span>
+                                                </div>
+                                                <div class="expense-actions">
+                                                    <button class="icon-button edit" @click="editExpense(expense.id)" title="Editar">✏️</button>
+                                                    <button class="icon-button delete" @click="deleteExpense(expense.id)" title="Borrar">🗑️</button>
+                                                </div>
+                                            </div>
+                                            <div class="expense-meta">
+                                                <span x-text="formatTime(expense.date)"></span>
+                                                <span x-show="expense.units > 1" x-text="expense.units + ' unidades'"></span>
                                                 <button
-                                                    @click="saveTag(expense.id, category)"
-                                                    :title="category.name"
-                                                    class="tag-button"
+                                                    x-show="expense.coords"
+                                                    @click.stop="showExpenseLocation(expense)"
+                                                    class="map-button"
+                                                    :class="{ 'active': expense.showMap }"
                                                 >
-                                                    <span x-text="category.emoji"></span>
+                                                    📍
                                                 </button>
-                                            </template>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="expense-details">
-                                        <div class="expense-amount">
-                                            <span x-html="formatSourceAmount(expense.amount * expense.units)"></span>
-                                            <span class="eur" x-html="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ')'"></span>
-                                        </div>
-                                        <div class="expense-meta">
-                                            <span x-text="formatTime(expense.date)"></span>
-                                            <span x-show="expense.units > 1" x-text="expense.units + ' unidades'"></span>
-                                            <button
-                                                x-show="expense.coords"
-                                                @click.stop="showExpenseLocation(expense)"
-                                                class="map-button"
-                                                :class="{ 'active': expense.showMap }"
-                                            >
-                                                📍
-                                            </button>
-                                        </div>
-                                        <div x-show="expense.coords && expense.showMap" class="expense-map">
-                                            <div :id="'map-' + expense.id" class="map-container"></div>
-                                        </div>
-                                    </div>
-                                    <div class="expense-actions">
-                                        <button @click="editExpense(expense.id)">Editar</button>
-                                        <button @click="deleteExpense(expense.id)">Borrar</button>
                                     </div>
                                 </div>
-
+                                <div x-show="expense.coords && expense.showMap" class="expense-map">
+                                    <div :id="'map-' + expense.id" class="map-container"></div>
+                                </div>
                                 <!-- Edit form -->
                                 <div x-show="editingExpenseId === expense.id" class="expense-edit-form">
                                     <div class="input-group">
@@ -171,7 +174,7 @@
                                         <div class="expense-input-row">
                                             <div class="amount-input">
                                                 <input type="number" x-model="newExpense.amount" @input="updateConversion()">
-                                                <span class="converted-amount" x-html="'= ' + formatTargetAmount(convertedAmount)"></span>
+                                                <span class="converted-amount" x-text="formatTargetAmount(convertedAmount)"></span>
                                             </div>
                                             <div class="units-control">
                                                 <button @click="decrementUnits()">-</button>

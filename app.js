@@ -79,6 +79,32 @@ document.addEventListener('alpine:init', () => {
             this.updateCurrencySymbol('target');
 
             this.groupExpensesByDay();
+            
+            // Add click outside handler for tag editor
+            document.addEventListener('click', (e) => {
+                if (this.showTagEditor !== null) {
+                    // Find the specific tag editor that's open
+                    const clickedInsideTagEditor = e.target.closest('.tag-editor');
+                    const clickedOnTagButton = e.target.closest('.expense-tag');
+                    
+                    // If we clicked outside both the tag editor and tag buttons, close it
+                    if (!clickedInsideTagEditor && !clickedOnTagButton) {
+                        this.showTagEditor = null;
+                    }
+                }
+            });
+            
+            if (this.lastRateUpdate) {
+                const lastUpdate = new Date(this.lastRateUpdate);
+                const now = new Date();
+                const daysSinceUpdate = Math.floor((now - lastUpdate) / (1000 * 60 * 60 * 24));
+                
+                if (daysSinceUpdate > 7) {
+                    this.checkExchangeRate();
+                }
+            } else {
+                this.checkExchangeRate();
+            }
 
             // Set today as expanded by default
             const today = new Date().toISOString().split('T')[0];
@@ -330,7 +356,7 @@ document.addEventListener('alpine:init', () => {
             const symbol = this.currencies.source.symbol;
             const isRTL = ['د.م.', 'د.إ', 'ر.ق'].includes(symbol);
             const isGBP = symbol === '£';
-            
+
             if (isRTL) {
                 return `${formattedAmount} <span class="rtl-text">${symbol}</span>`;
             } else if (isGBP) {

@@ -132,6 +132,12 @@ input {
     display: inline-block;
 }
 
+.converted-amount {
+    margin-left: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
 .total {
     background: #f8f9fa;
     padding: 15px;
@@ -149,22 +155,37 @@ input {
     display: inline-block;
 }
 
-.action-buttons {
+.expense-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    margin-left: auto;
 }
 
-button {
-    padding: 10px 15px;
+.icon-button {
+    background: none;
     border: none;
-    border-radius: 4px;
-    background: #e0e0e0;
+    padding: 4px;
     cursor: pointer;
+    font-size: 16px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    opacity: 0.7;
 }
 
-button.primary {
-    background: #3498db;
-    color: white;
+.icon-button:hover {
+    background-color: #f0f0f0;
+    opacity: 1;
+}
+
+.icon-button.delete:hover {
+    background-color: #fee2e2;
+}
+
+.icon-button.edit:hover {
+    background-color: #e8f4f8;
 }
 
 .expenses-list {
@@ -223,61 +244,53 @@ button.primary {
 
 .expense-content {
     display: flex;
+    width: 100%;
+}
+
+.expense-main {
+    display: flex;
     align-items: flex-start;
     gap: 12px;
-    position: relative;
+    flex: 1;
 }
 
 .expense-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     flex: 1;
-    min-width: 0;
+}
+
+.expense-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.expense-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.expense-actions {
+    display: flex;
+    gap: 4px;
 }
 
 .expense-amount {
     font-size: 1rem;
     display: flex;
-    gap: 8px;
     align-items: center;
-    flex-wrap: wrap;
-}
-
-.expense-amount span {
-    display: inline-block;
+    gap: 8px;
 }
 
 .expense-amount .eur {
     color: #666;
     font-size: 0.9rem;
-}
-
-.expense-meta {
-    font-size: 0.8rem;
-    color: #666;
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.expense-actions {
-    display: flex;
-    gap: 8px;
-    margin-left: auto;
-    align-items: flex-start;
-}
-
-.expense-actions button {
-    padding: 4px 8px;
-    border: none;
-    background: none;
-    color: #1976d2;
-    cursor: pointer;
-    font-size: 0.8rem;
-    border-radius: 4px;
-}
-
-.expense-actions button:hover {
-    background: #e3f2fd;
 }
 
 .expense-tag {
@@ -291,6 +304,7 @@ button.primary {
     cursor: pointer;
     font-size: 1.2rem;
     flex-shrink: 0;
+    position: relative;
 }
 
 .expense-tag:hover {
@@ -299,39 +313,40 @@ button.primary {
 
 .tag-editor {
     position: absolute;
-    left: 40px;
+    left: 100%;
     top: 0;
+    margin-left: 8px;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 100;
     padding: 8px;
-    min-width: max-content;
+    min-width: 200px;
 }
 
 .tag-categories {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    width: max-content;
+    gap: 8px;
 }
 
 .tag-button {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #f5f5f5;
     border: none;
-    background: none;
+    border-radius: 4px;
     cursor: pointer;
     font-size: 1.2rem;
-    border-radius: 4px;
     padding: 0;
+    transition: background-color 0.2s;
 }
 
 .tag-button:hover {
-    background: #f5f5f5;
+    background: #e0e0e0;
 }
 
 .tag-button span {
@@ -388,33 +403,31 @@ button.primary {
 }
 
 .expense-map {
-    width: 100%;
-    margin-top: 12px;
+    margin-top: 8px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .map-container {
     height: 200px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    width: 100%;
 }
 
 .map-button {
     background: none;
     border: none;
-    padding: 4px 8px;
+    padding: 2px 4px;
     cursor: pointer;
     border-radius: 4px;
+    font-size: 1.1em;
+    opacity: 0.8;
     transition: all 0.2s;
-    font-size: 1em;
 }
 
-.map-button:hover {
-    background: #f0f0f0;
-}
-
+.map-button:hover,
 .map-button.active {
-    background: #e0e0e0;
-    color: #2196f3;
+    opacity: 1;
+    background-color: #f0f0f0;
 }
 
 .currency-editor {
@@ -606,6 +619,7 @@ button.primary {
 .rtl-text {
     direction: rtl;
     unicode-bidi: bidi-override;
+    display: inline-block;
 }
 
 @keyframes highlightFlash {
@@ -723,4 +737,36 @@ button.primary {
 .header-buttons {
     display: flex;
     gap: 8px;
+}
+
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background: #d0d0d0;
+}
+
+button.primary {
+    background: #2196f3;
+    color: white;
+}
+
+button.primary:hover {
+    background: #1976d2;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.action-buttons button {
+    flex: 1;
 }
