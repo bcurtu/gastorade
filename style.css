@@ -129,6 +129,7 @@ input {
     color: #666;
     font-size: 0.95rem;
     min-width: 80px;
+    display: inline-block;
 }
 
 .total {
@@ -142,6 +143,10 @@ input {
 .total h3 {
     margin-bottom: 5px;
     font-size: 1rem;
+}
+
+.total div {
+    display: inline-block;
 }
 
 .action-buttons {
@@ -234,6 +239,10 @@ button.primary {
     gap: 8px;
     align-items: center;
     flex-wrap: wrap;
+}
+
+.expense-amount span {
+    display: inline-block;
 }
 
 .expense-amount .eur {
@@ -502,6 +511,10 @@ button.primary {
     color: #2196f3;
 }
 
+.total-amount span {
+    display: inline-block;
+}
+
 .tag-analytics {
     display: flex;
     flex-direction: column;
@@ -539,6 +552,10 @@ button.primary {
 
 .tag-amounts {
     text-align: right;
+}
+
+.tag-amounts span {
+    display: inline-block;
 }
 
 .tag-amounts .eur {
@@ -584,6 +601,11 @@ button.primary {
 
 .link-button:hover {
     color: #0d47a1;
+}
+
+.rtl-text {
+    direction: rtl;
+    unicode-bidi: bidi-override;
 }
 
 @keyframes highlightFlash {

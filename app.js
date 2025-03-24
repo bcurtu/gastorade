@@ -326,11 +326,33 @@ document.addEventListener('alpine:init', () => {
         },
         // Formateadores y utilidades
         formatSourceAmount(amount) {
-            return amount.toFixed(2);
+            const formattedAmount = amount.toFixed(2);
+            const symbol = this.currencies.source.symbol;
+            const isRTL = ['د.م.', 'د.إ', 'ر.ق'].includes(symbol);
+            const isGBP = symbol === '£';
+            
+            if (isRTL) {
+                return `${formattedAmount} <span class="rtl-text">${symbol}</span>`;
+            } else if (isGBP) {
+                return `${symbol}${formattedAmount}`;
+            } else {
+                return `${formattedAmount} ${symbol}`;
+            }
         },
 
         formatTargetAmount(amount) {
-            return amount.toFixed(2);
+            const formattedAmount = amount.toFixed(2);
+            const symbol = this.currencies.target.symbol;
+            const isRTL = ['د.م.', 'د.إ', 'ر.ق'].includes(symbol);
+            const isGBP = symbol === '£';
+            
+            if (isRTL) {
+                return `${formattedAmount} <span class="rtl-text">${symbol}</span>`;
+            } else if (isGBP) {
+                return `${symbol}${formattedAmount}`;
+            } else {
+                return `${formattedAmount} ${symbol}`;
+            }
         },
 
         formatThb(amount) {

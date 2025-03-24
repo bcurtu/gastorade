@@ -76,11 +76,11 @@
         <div class="expense-calculator" x-show="!editingExpenseId">
             <h2>Nuevo Gasto</h2>
             <div class="input-group">
-                <label>Cantidad (<span x-text="currencies.source.code"></span>)</label>
+                <label>Importe (<span x-text="currencies.source.code"></span>)</label>
                 <div class="expense-input-row">
                     <div class="amount-input">
                         <input type="number" x-model="newExpense.amount" @input="updateConversion()">
-                        <span class="converted-amount" x-text="'= ' + convertedAmount + currencies.target.symbol"></span>
+                        <span class="converted-amount" x-html="'= ' + formatTargetAmount(convertedAmount)"></span>
                     </div>
                     <div class="units-control">
                         <button @click="decrementUnits()">-</button>
@@ -92,8 +92,8 @@
 
             <div class="total">
                 <h3>TOTAL</h3>
-                <div x-text="formatSourceAmount(newExpense.amount * newExpense.units) + ' ' + currencies.source.symbol"></div>
-                <div x-text="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ' ' + currencies.target.symbol + ')'"></div>
+                <div x-html="formatSourceAmount(newExpense.amount * newExpense.units)"></div>
+                <div x-html="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ')'"></div>
             </div>
 
             <div class="action-buttons">
@@ -113,7 +113,7 @@
                             <span class="expand-icon" x-text="isDayExpanded(day.dateKey) ? '▼' : '▶'"></span>
                             <h3 x-text="day.date"></h3>
                         </div>
-                        <span x-text="'TOTAL: ' + formatTargetAmount(day.totalTarget) + ' ' + currencies.target.symbol"></span>
+                        <span x-html="'TOTAL: ' + formatTargetAmount(day.totalTarget)"></span>
                     </div>
 
                     <div class="day-expenses" x-show="isDayExpanded(day.dateKey)">
@@ -139,8 +139,8 @@
                                     </div>
                                     <div class="expense-details">
                                         <div class="expense-amount">
-                                            <span x-text="formatSourceAmount(expense.amount * expense.units) + ' ' + currencies.source.symbol"></span>
-                                            <span class="eur" x-text="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ' ' + currencies.target.symbol + ')'"></span>
+                                            <span x-html="formatSourceAmount(expense.amount * expense.units)"></span>
+                                            <span class="eur" x-html="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ')'"></span>
                                         </div>
                                         <div class="expense-meta">
                                             <span x-text="formatTime(expense.date)"></span>
@@ -167,11 +167,11 @@
                                 <!-- Edit form -->
                                 <div x-show="editingExpenseId === expense.id" class="expense-edit-form">
                                     <div class="input-group">
-                                        <label>Cantidad (<span x-text="currencies.source.code"></span>)</label>
+                                        <label>Importe (<span x-text="currencies.source.code"></span>)</label>
                                         <div class="expense-input-row">
                                             <div class="amount-input">
                                                 <input type="number" x-model="newExpense.amount" @input="updateConversion()">
-                                                <span class="converted-amount" x-text="'= ' + convertedAmount + currencies.target.symbol"></span>
+                                                <span class="converted-amount" x-html="'= ' + formatTargetAmount(convertedAmount)"></span>
                                             </div>
                                             <div class="units-control">
                                                 <button @click="decrementUnits()">-</button>
@@ -191,8 +191,8 @@
 
                                     <div class="total">
                                         <h3>TOTAL</h3>
-                                        <div x-text="formatSourceAmount(newExpense.amount * newExpense.units) + ' ' + currencies.source.symbol"></div>
-                                        <div x-text="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ' ' + currencies.target.symbol + ')'"></div>
+                                        <div x-html="formatSourceAmount(newExpense.amount * newExpense.units)"></div>
+                                        <div x-html="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ')'"></div>
                                     </div>
 
                                     <div class="action-buttons">
@@ -215,8 +215,8 @@
                 <h2>Resumen Total</h2>
                 <div class="total-summary">
                     <div class="total-amount">
-                        <span x-text="formatSourceAmount(analytics.totalSource) + ' ' + currencies.source.symbol"></span>
-                        <span class="eur" x-text="'(' + formatTargetAmount(analytics.totalTarget) + ' ' + currencies.target.symbol + ')'"></span>
+                        <span x-html="formatSourceAmount(analytics.totalSource)"></span>
+                        <span class="eur" x-html="'(' + formatTargetAmount(analytics.totalTarget) + ')'"></span>
                     </div>
                 </div>
 
@@ -230,8 +230,8 @@
                                 <span class="tag-count" x-text="tag.count + ' gastos'"></span>
                             </div>
                             <div class="tag-amounts">
-                                <span x-text="formatSourceAmount(tag.totalSource) + ' ' + currencies.source.symbol"></span>
-                                <span class="eur" x-text="'(' + formatTargetAmount(tag.totalTarget) + ' ' + currencies.target.symbol + ')'"></span>
+                                <span x-html="formatSourceAmount(tag.totalSource)"></span>
+                                <span class="eur" x-html="'(' + formatTargetAmount(tag.totalTarget) + ')'"></span>
                             </div>
                         </div>
                     </template>
