@@ -19,7 +19,8 @@ document.addEventListener('alpine:init', () => {
             QAR: { code: 'QAR', symbol: 'ر.ق', name: 'Qatari Riyal' },
             INR: { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
             MXN: { code: 'MXN', symbol: '$', name: 'Mexican Peso' },
-            COP: { code: 'COP', symbol: '$', name: 'Colombian Peso' }
+            COP: { code: 'COP', symbol: '$', name: 'Colombian Peso' },
+            PLN: { code: 'PLN', symbol: 'zł', name: 'Polish Złoty' }
         },
         currencies: {
             source: {

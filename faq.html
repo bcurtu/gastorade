@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="description" content="Preguntas frecuentes sobre Gastorade - Conversor de divisas y gestor de gastos para viajes">
+    <title>Preguntas Frecuentes - Gastorade</title>
+    <link rel="icon" type="image/jpg" href="gastorade.jpg">
+    <link rel="shortcut icon" type="image/jpg" href="gastorade.jpg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="gastorade.jpg">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-G0JQ7P64MS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-G0JQ7P64MS');
+    </script>
+    <link rel="stylesheet" href="style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="app-container faq-container">
+        <div class="header">
+            <h1>Gastorade</h1>
+        </div>
+
+        <div class="faq-content">
+            <h2>Preguntas Frecuentes</h2>
+            
+            <div class="faq-section">
+                <div class="faq-item">
+                    <h3>¿Qué es Gastorade?</h3>
+                    <p>Gastorade es una aplicación web que te ayuda a gestionar tus gastos durante viajes internacionales, permitiéndote convertir monedas extranjeras a tu moneda local de forma sencilla y organizada.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Cómo funciona la conversión de monedas?</h3>
+                    <p>Gastorade utiliza tasas de cambio que puedes actualizar manualmente. Para cambiar la tasa, haz clic en el botón de editar junto a la tasa de cambio actual en la página principal.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Puedo cambiar las monedas?</h3>
+                    <p>Sí, puedes cambiar tanto la moneda de origen como la moneda de destino haciendo clic en los códigos de moneda en la sección de conversión.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Cómo añado un nuevo gasto?</h3>
+                    <p>En la página principal, introduce la cantidad en la moneda extranjera, opcionalmente ajusta el número de unidades, y haz clic en "Guardar". También puedes añadir una ubicación si lo deseas.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Qué significan los iconos en cada gasto?</h3>
+                    <p>
+                        <ul>
+                            <li>🏷️ - Permite asignar una categoría al gasto</li>
+                            <li>✏️ - Editar el gasto</li>
+                            <li>🗑️ - Eliminar el gasto</li>
+                            <li>📍 - Ver la ubicación del gasto en un mapa (si se registró ubicación)</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Cómo funcionan las categorías?</h3>
+                    <p>Las categorías te permiten organizar tus gastos por tipo. Para asignar una categoría:</p>
+                    <p>
+                        <ol>
+                            <li>Haz clic en el icono 🏷️ junto a cualquier gasto</li>
+                            <li>Se abrirá un menú con diferentes emojis que representan categorías</li>
+                            <li>Selecciona el emoji que mejor represente el tipo de gasto</li>
+                        </ol>
+                    </p>
+                    <p>Las categorías disponibles incluyen:</p>
+                    <p>
+                        <ul>
+                            <li>🍽️ - Comida en restaurantes</li>
+                            <li>🍿 - Snacks y aperitivos</li>
+                            <li>🏨 - Alojamiento</li>
+                            <li>🚕 - Transporte</li>
+                            <li>🎭 - Entretenimiento y actividades</li>
+                            <li>🛍️ - Compras</li>
+                            <li>🧴 - Artículos de higiene y cuidado personal</li>
+                            <li>🏛️ - Entradas a museos y monumentos</li>
+                            <li>Y muchas más...</li>
+                        </ul>
+                    </p>
+                    <p>Categorizar tus gastos te ayuda a tener una mejor visión de en qué estás gastando tu dinero durante el viaje, lo que facilita llevar un control de tu presupuesto.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Mis datos están seguros?</h3>
+                    <p>Todos tus datos se almacenan localmente en tu dispositivo y no se envían a ningún servidor. Esto significa que tus datos son privados, pero también que debes hacer copias de seguridad si cambias de dispositivo.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Funciona sin conexión a internet?</h3>
+                    <p>Sí, Gastorade funciona completamente sin conexión una vez cargada la página. Puedes añadir, editar y eliminar gastos sin necesidad de conexión a internet.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Cómo puedo borrar todos mis datos?</h3>
+                    <p>En la parte inferior de la página principal encontrarás la "Zona de Peligro" con un botón para reiniciar todos los datos. Ten en cuenta que esta acción no se puede deshacer.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Cómo puedo contactar con el desarrollador?</h3>
+                    <p>Puedes contactar con el desarrollador enviando un correo electrónico a <a href="mailto:bcurtu+gastorade@gmail.com">bcurtu+gastorade@gmail.com</a>.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="back-to-app">
+            <a href="index.html" class="button primary">Volver a la aplicación</a>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Inicio</a>
+            <a href="faq.html" class="nav-link active">Preguntas Frecuentes</a>
+        </div>
+        <p>Simplifica tus viajes: Convierte y organiza tus gastos internacionales al instante en tu moneda local.</p>
+        <p>Creado por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</p>
+    </footer>
+</body>
+</html>
