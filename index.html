@@ -79,7 +79,24 @@
                 <label>Importe (<span x-text="currencies.source.code"></span>)</label>
                 <div class="expense-input-row">
                     <div class="amount-input">
-                        <input type="number" x-model="newExpense.amount" @input="updateConversion()">
+                        <div class="expense-tag" @click.stop="showNewExpenseTagEditor = !showNewExpenseTagEditor" style="margin-right: 10px;">
+                            <span x-text="newExpense.tag || '🏷️'"></span>
+                            <div x-show="showNewExpenseTagEditor" class="tag-editor" @click.stop>
+                                <div class="tag-categories">
+                                    <template x-for="category in tagCategories" :key="category.emoji">
+                                        <button
+                                            type="button"
+                                            @click="newExpense.tag = category.emoji; showNewExpenseTagEditor = false"
+                                            :title="category.name"
+                                            class="tag-button"
+                                        >
+                                            <span x-text="category.emoji"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="number" x-model="newExpense.amount" @input="updateConversion()" style="padding-left: 10px;">
                         <span class="converted-amount" x-text="formatTargetAmount(convertedAmount)"></span>
                     </div>
                     <div class="units-control">

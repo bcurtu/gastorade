@@ -46,16 +46,17 @@ document.addEventListener('alpine:init', () => {
         convertedAmount: '0.00',
         expenses: JSON.parse(localStorage.getItem('expenses') || '[]'),
         showTagEditor: null,
+        showNewExpenseTagEditor: false,
         tagCategories: [
             { emoji: '🍽️', name: 'Comida' },
-            { emoji: '🍿', name: 'Snacks' },
+            { emoji: '🍺', name: 'Bebidas' },
+            { emoji: '🍭', name: 'Snacks' },
             { emoji: '🎁', name: 'Regalos' },
-            { emoji: '⛩️', name: 'Museo' },
-            { emoji: '🤿', name: 'Actividades' },
-            { emoji: '🚌', name: 'Transporte' },
+            { emoji: '🏛️', name: 'Museo' },
+            { emoji: '🛶', name: 'Actividades' },
+            { emoji: '🚕', name: 'Transporte' },
             { emoji: '👕', name: 'Ropa' },
-            { emoji: '💊', name: 'Farmacia' },
-            { emoji: '🏨', name: 'Hotel' }
+            { emoji: '💊', name: 'Farmacia' }
         ],
         tagInput: '',
         editingExpenseId: null,
@@ -150,7 +151,7 @@ document.addEventListener('alpine:init', () => {
                 location: this.newExpense.location,
                 coords: this.newExpense.coords ? { ...this.newExpense.coords } : null,
                 showMap: false,
-                tag: ''
+                tag: this.newExpense.tag || ''
             };
 
             this.expenses.push(expense);
@@ -166,8 +167,10 @@ document.addEventListener('alpine:init', () => {
                 units: 1,
                 date: new Date(),
                 location: '',
-                coords: this.currentLocation ? { ...this.currentLocation } : null
+                coords: this.currentLocation ? { ...this.currentLocation } : null,
+                tag: ''
             };
+            this.showNewExpenseTagEditor = false;
             this.convertedAmount = '0.00';
         },
 
