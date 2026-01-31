@@ -681,6 +681,31 @@ input {
     margin-bottom: 16px;
 }
 
+.danger-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.secondary-button {
+    background: #2196f3;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.secondary-button:hover {
+    background: #1976d2;
+}
+
+.secondary-button:active {
+    transform: translateY(1px);
+}
+
 .danger-button {
     background: #dc3545;
     color: white;

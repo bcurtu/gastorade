@@ -261,9 +261,17 @@
 
         <div class="danger-zone">
             <h3>Zona de Peligro</h3>
-            <button @click="resetData()" class="danger-button">
-                Borrar todos los gastos
-            </button>
+            <div class="danger-actions">
+                <button @click="exportDatabase()" class="secondary-button">
+                    📥 Exportar base de datos
+                </button>
+                <button @click="importDatabase()" class="secondary-button">
+                    📤 Importar base de datos
+                </button>
+                <button @click="resetData()" class="danger-button">
+                    Borrar todos los gastos
+                </button>
+            </div>
         </div>
     </div>
     <footer class="app-footer">

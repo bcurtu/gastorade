@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "exportDate": "2026-01-31T10:30:00.000Z",
+  "data": {
+    "expenses": [
+      {
+        "id": "1738323000000",
+        "amount": 100,
+        "units": 2,
+        "exchangeRate": 0.026,
+        "date": "2026-01-31T10:30:00.000Z",
+        "location": "",
+        "coords": null,
+        "showMap": false,
+        "tag": "🍽️"
+      },
+      {
+        "id": "1738324000000",
+        "amount": 50,
+        "units": 1,
+        "exchangeRate": 0.026,
+        "date": "2026-01-31T11:00:00.000Z",
+        "location": "",
+        "coords": null,
+        "showMap": false,
+        "tag": "🍺"
+      }
+    ],
+    "exchangeRate": 0.026,
+    "lastRateUpdate": "2026-01-31",
+    "sourceCurrency": "THB",
+    "sourceCurrencySymbol": "฿",
+    "targetCurrency": "EUR",
+    "targetCurrencySymbol": "€"
+  }
+}

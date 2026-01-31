@@ -1,5 +1,8 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('expenseCalculator', () => ({
+        // Database version
+        DB_VERSION: '1.0',
+
         // Estado
         supportedCurrencies: {
             EUR: { code: 'EUR', symbol: '€', name: 'Euro' },
@@ -531,6 +534,97 @@ document.addEventListener('alpine:init', () => {
                 console.error('Error updating exchange rate:', error);
                 alert('No se pudo actualizar el tipo de cambio. Por favor, inténtalo más tarde.');
             }
+        },
+
+        exportDatabase() {
+            const data = {
+                version: this.DB_VERSION,
+                exportDate: new Date().toISOString(),
+                data: {
+                    expenses: this.expenses,
+                    exchangeRate: this.exchangeRate,
+                    lastRateUpdate: this.lastRateUpdate,
+                    sourceCurrency: this.currencies.source.code,
+                    sourceCurrencySymbol: this.currencies.source.symbol,
+                    targetCurrency: this.currencies.target.code,
+                    targetCurrencySymbol: this.currencies.target.symbol
+                }
+            };
+
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gastorade-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        },
+
+        importDatabase() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+
+                        // Validate version
+                        if (!importedData.version) {
+                            alert('El archivo no tiene un formato válido (falta versión).');
+                            return;
+                        }
+
+                        // Check version compatibility
+                        if (importedData.version !== this.DB_VERSION) {
+                            if (!confirm(`El archivo es de una versión diferente (${importedData.version} vs ${this.DB_VERSION}). ¿Quieres intentar importarlo de todas formas?`)) {
+                                return;
+                            }
+                        }
+
+                        // Confirm import
+                        if (!confirm('¿Estás seguro de que quieres importar estos datos? Esto sobrescribirá todos los datos actuales.')) {
+                            return;
+                        }
+
+                        // Import data
+                        const data = importedData.data;
+                        this.expenses = data.expenses || [];
+                        this.exchangeRate = data.exchangeRate || 0.026;
+                        this.lastRateUpdate = data.lastRateUpdate || null;
+                        this.currencies.source.code = data.sourceCurrency || 'THB';
+                        this.currencies.source.symbol = data.sourceCurrencySymbol || '฿';
+                        this.currencies.target.code = data.targetCurrency || 'EUR';
+                        this.currencies.target.symbol = data.targetCurrencySymbol || '€';
+
+                        // Save to localStorage
+                        localStorage.setItem('expenses', JSON.stringify(this.expenses));
+                        localStorage.setItem('exchangeRate', this.exchangeRate);
+                        localStorage.setItem('lastRateUpdate', this.lastRateUpdate);
+                        localStorage.setItem('sourceCurrency', this.currencies.source.code);
+                        localStorage.setItem('sourceCurrencySymbol', this.currencies.source.symbol);
+                        localStorage.setItem('targetCurrency', this.currencies.target.code);
+                        localStorage.setItem('targetCurrencySymbol', this.currencies.target.symbol);
+
+                        // Update UI
+                        this.groupExpensesByDay();
+
+                        alert('Datos importados correctamente.');
+                    } catch (error) {
+                        console.error('Error importing data:', error);
+                        alert('Error al importar los datos. Asegúrate de que el archivo sea válido.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         },
     }));
 });
