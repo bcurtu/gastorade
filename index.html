@@ -31,10 +31,34 @@
                 navigator.serviceWorker.register('/sw.js')
                     .then(registration => {
                         console.log('ServiceWorker registration successful');
+
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'activated') {
+                                    // New service worker activated, reload the page
+                                    if (confirm('Nueva versión disponible. ¿Recargar la página para actualizar?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+
+                        // Check for updates every 60 seconds
+                        setInterval(() => {
+                            registration.update();
+                        }, 60000);
                     })
                     .catch(err => {
                         console.log('ServiceWorker registration failed: ', err);
                     });
+
+                // Listen for controller change and reload
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('Controller changed, reloading page');
+                    window.location.reload();
+                });
             });
         }
     </script>

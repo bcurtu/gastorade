@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forzar Actualización - Gastorade</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .status {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #1976d2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+        button.secondary {
+            background: #4caf50;
+        }
+        button.secondary:hover {
+            background: #45a049;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .success {
+            color: #4caf50;
+            font-weight: 600;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Forzar Actualización</h1>
+        <p>Usa esta página para limpiar el cache y forzar la actualización de Gastorade.</p>
+
+        <div class="status" id="status">
+            Estado: Esperando acción...
+        </div>
+
+        <button onclick="unregisterServiceWorker()">1. Desregistrar Service Worker</button>
+        <button class="secondary" onclick="clearCache()">2. Limpiar Cache</button>
+        <button class="danger" onclick="clearAll()">3. Limpiar Todo (SW + Cache)</button>
+        <button onclick="goToApp()">4. Ir a la Aplicación</button>
+
+        <p style="margin-top: 30px; font-size: 0.85rem; color: #999;">
+            💡 Tip: Después de limpiar, cierra todas las pestañas de Gastorade y vuelve a abrir.
+        </p>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+
+        function updateStatus(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+            statusDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        }
+
+        async function unregisterServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        updateStatus('Service Worker desregistrado', 'success');
+                    }
+                    if (registrations.length === 0) {
+                        updateStatus('No hay Service Workers registrados', 'info');
+                    }
+                } catch (error) {
+                    updateStatus('Error al desregistrar: ' + error.message, 'error');
+                }
+            } else {
+                updateStatus('Service Worker no disponible en este navegador', 'error');
+            }
+        }
+
+        async function clearCache() {
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    for (let cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        updateStatus('Cache eliminado: ' + cacheName, 'success');
+                    }
+                    if (cacheNames.length === 0) {
+                        updateStatus('No hay caches para eliminar', 'info');
+                    }
+                } catch (error) {
+                    updateStatus('Error al limpiar cache: ' + error.message, 'error');
+                }
+            } else {
+                updateStatus('Cache API no disponible en este navegador', 'error');
+            }
+        }
+
+        async function clearAll() {
+            updateStatus('Limpiando todo...', 'info');
+            await unregisterServiceWorker();
+            await clearCache();
+            updateStatus('✅ Limpieza completa. Cierra todas las pestañas y vuelve a abrir.', 'success');
+        }
+
+        function goToApp() {
+            updateStatus('Redirigiendo a la aplicación...', 'info');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 500);
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', async () => {
+            updateStatus('Página de actualización cargada', 'success');
+
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                updateStatus(`Service Workers activos: ${registrations.length}`, 'info');
+            }
+
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                updateStatus(`Caches activos: ${cacheNames.length} (${cacheNames.join(', ')})`, 'info');
+            }
+        });
+    </script>
+</body>
+</html>
