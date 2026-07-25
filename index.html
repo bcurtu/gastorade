@@ -100,7 +100,7 @@
         <div class="expense-calculator" x-show="!editingExpenseId">
             <h2>Nuevo Gasto</h2>
             <div class="input-group">
-                <label>Importe (<span x-text="currencies.source.code"></span>)</label>
+                <label>Importe (1 <span x-text="currencies.source.code"></span> = <span x-text="formatExchangeRate(exchangeRate)"></span><span x-text="currencies.target.symbol"></span>)</label>
                 <div class="expense-input-row">
                     <div class="amount-input">
                         <div class="expense-tag" @click.stop="showNewExpenseTagEditor = !showNewExpenseTagEditor" style="margin-right: 10px;">
@@ -217,7 +217,7 @@
                                 <!-- Edit form -->
                                 <div x-show="editingExpenseId === expense.id" class="expense-edit-form">
                                     <div class="input-group">
-                                        <label>Importe (<span x-text="currencies.source.code"></span>)</label>
+                                        <label>Importe (1 <span x-text="currencies.source.code"></span> = <span x-text="formatExchangeRate(exchangeRate)"></span><span x-text="currencies.target.symbol"></span>)</label>
                                         <div class="expense-input-row">
                                             <div class="amount-input">
                                                 <input type="number" x-model="newExpense.amount" @input="updateConversion()">
