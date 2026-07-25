@@ -198,6 +198,7 @@
                                             <div class="expense-meta">
                                                 <span x-text="formatTime(expense.date)"></span>
                                                 <span x-show="expense.units > 1" x-text="expense.units + ' unidades'"></span>
+                                                <span x-show="expense.note" x-text="expense.note"></span>
                                                 <button
                                                     x-show="expense.coords"
                                                     @click.stop="showExpenseLocation(expense)"
