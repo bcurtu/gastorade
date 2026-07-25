@@ -67,13 +67,7 @@
     <div class="app-container" x-data="expenseCalculator()">
         <!-- Configuración de tipo de cambio -->
         <div class="header">
-            <h1>Gastorade</h1>
-            <div class="exchange-rate-section">
-                <div class="exchange-rate-display">
-                    <span>Tipo de cambio: 1 <span x-text="currencies.source.code"></span> = <strong x-text="formatExchangeRate(exchangeRate)"></strong><span x-text="currencies.target.symbol"></span></span>
-                    <button x-show="!expenses.length" class="link-button" @click="showCurrencyEditor = !showCurrencyEditor">editar</button>
-                </div>
-            </div>
+            <h1><img src="gastorade.jpg" alt="" class="header-icon">Gastorade</h1>
 
             <div x-show="showCurrencyEditor" class="currency-editor">
                 <div class="currency-input">
