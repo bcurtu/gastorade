@@ -131,6 +131,11 @@
                 </div>
             </div>
 
+            <div class="input-group">
+                <label>Nota (opcional)</label>
+                <input type="text" maxlength="24" x-model="newExpense.note" placeholder="Nota (opcional)">
+            </div>
+
             <div class="total">
                 <h3>TOTAL</h3>
                 <div x-html="formatSourceAmount(newExpense.amount * newExpense.units)"></div>
