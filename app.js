@@ -44,7 +44,8 @@ document.addEventListener('alpine:init', () => {
             units: 1,
             date: new Date(),
             location: '',
-            coords: null
+            coords: null,
+            note: ''
         },
         convertedAmount: '0.00',
         expenses: JSON.parse(localStorage.getItem('expenses') || '[]'),
@@ -171,7 +172,8 @@ document.addEventListener('alpine:init', () => {
                 date: new Date(),
                 location: '',
                 coords: this.currentLocation ? { ...this.currentLocation } : null,
-                tag: ''
+                tag: '',
+                note: ''
             };
             this.showNewExpenseTagEditor = false;
             this.convertedAmount = '0.00';
