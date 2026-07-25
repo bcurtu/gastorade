@@ -155,7 +155,8 @@ document.addEventListener('alpine:init', () => {
                 location: this.newExpense.location,
                 coords: this.newExpense.coords ? { ...this.newExpense.coords } : null,
                 showMap: false,
-                tag: this.newExpense.tag || ''
+                tag: this.newExpense.tag || '',
+                note: (this.newExpense.note || '').slice(0, 24)
             };
 
             this.expenses.push(expense);
@@ -205,7 +206,8 @@ document.addEventListener('alpine:init', () => {
                     location: expense.location,
                     coords: expense.coords,
                     dateInput: date.toISOString().split('T')[0],
-                    timeInput: date.toTimeString().slice(0, 5)
+                    timeInput: date.toTimeString().slice(0, 5),
+                    note: expense.note || ''
                 };
                 this.updateConversion();
 
@@ -267,7 +269,8 @@ document.addEventListener('alpine:init', () => {
                     units: this.newExpense.units,
                     date: dateTime.toISOString(),
                     location: this.newExpense.location,
-                    coords: this.newExpense.coords
+                    coords: this.newExpense.coords,
+                    note: (this.newExpense.note || '').slice(0, 24)
                 };
 
                 localStorage.setItem('expenses', JSON.stringify(this.expenses));
