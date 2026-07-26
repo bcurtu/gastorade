@@ -483,6 +483,7 @@ input {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .currency-input label {
@@ -517,6 +518,12 @@ input {
 .currency-input select:focus {
     outline: none;
     border-color: #1976d2;
+}
+
+.currency-input small {
+    flex-basis: 100%;
+    color: #666;
+    font-size: 0.8rem;
 }
 
 .currency-editor button {
