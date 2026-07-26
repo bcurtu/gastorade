@@ -268,7 +268,7 @@
                 <h2>Resumen Total</h2>
                 <div class="total-summary">
                     <div class="total-amount">
-                        <span x-html="formatSourceAmount(analytics.totalSource)"></span>
+                        <span x-html="formatCurrencyBreakdown(analytics.totalsByCurrency)"></span>
                         <span class="eur" x-html="'(' + formatTargetAmount(analytics.totalTarget) + ')'"></span>
                     </div>
                 </div>
@@ -283,7 +283,7 @@
                                 <span class="tag-count" x-text="tag.count + ' gastos'"></span>
                             </div>
                             <div class="tag-amounts">
-                                <span x-html="formatSourceAmount(tag.totalSource)"></span>
+                                <span x-html="formatCurrencyBreakdown(tag.totalsByCurrency)"></span>
                                 <span class="eur" x-html="'(' + formatTargetAmount(tag.totalTarget) + ')'"></span>
                             </div>
                         </div>

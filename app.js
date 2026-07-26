@@ -407,6 +407,12 @@ document.addEventListener('alpine:init', () => {
             return this.formatCurrencyAmount(amount, this.currencies.target.symbol);
         },
 
+        formatCurrencyBreakdown(totalsByCurrency) {
+            return Object.values(totalsByCurrency)
+                .map(({ symbol, total }) => this.formatCurrencyAmount(total, symbol))
+                .join(' + ');
+        },
+
         formatThb(amount) {
             return amount.toLocaleString('th-TH');
         },
@@ -458,14 +464,19 @@ document.addEventListener('alpine:init', () => {
                         date: this.formatDate(expense.date),
                         dateKey: dateKey,
                         expenses: [],
-                        totalSource: 0,
+                        totalsByCurrency: {},
                         totalTarget: 0
                     };
                 }
 
                 const total = expense.amount * expense.units;
                 groups[dateKey].expenses.push(expense);
-                groups[dateKey].totalSource += total;
+
+                const code = expense.currency.code;
+                if (!groups[dateKey].totalsByCurrency[code]) {
+                    groups[dateKey].totalsByCurrency[code] = { symbol: expense.currency.symbol, total: 0 };
+                }
+                groups[dateKey].totalsByCurrency[code].total += total;
                 groups[dateKey].totalTarget += total * expense.exchangeRate;
             });
 
@@ -475,7 +486,7 @@ document.addEventListener('alpine:init', () => {
 
         calculateAnalytics() {
             const analytics = {
-                totalSource: 0,
+                totalsByCurrency: {},
                 totalTarget: 0,
                 byTag: {}
             };
@@ -483,20 +494,27 @@ document.addEventListener('alpine:init', () => {
             this.expenses.forEach(expense => {
                 const amount = expense.amount * expense.units;
                 const targetAmount = amount * expense.exchangeRate;
+                const code = expense.currency.code;
 
-                analytics.totalSource += amount;
+                if (!analytics.totalsByCurrency[code]) {
+                    analytics.totalsByCurrency[code] = { symbol: expense.currency.symbol, total: 0 };
+                }
+                analytics.totalsByCurrency[code].total += amount;
                 analytics.totalTarget += targetAmount;
 
                 const tag = expense.tag || '🏷️';
                 if (!analytics.byTag[tag]) {
                     analytics.byTag[tag] = {
-                        totalSource: 0,
+                        totalsByCurrency: {},
                         totalTarget: 0,
                         count: 0,
                         name: this.tagCategories.find(c => c.emoji === tag)?.name || 'Sin etiqueta'
                     };
                 }
-                analytics.byTag[tag].totalSource += amount;
+                if (!analytics.byTag[tag].totalsByCurrency[code]) {
+                    analytics.byTag[tag].totalsByCurrency[code] = { symbol: expense.currency.symbol, total: 0 };
+                }
+                analytics.byTag[tag].totalsByCurrency[code].total += amount;
                 analytics.byTag[tag].totalTarget += targetAmount;
                 analytics.byTag[tag].count++;
             });
