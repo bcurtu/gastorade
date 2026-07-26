@@ -80,11 +80,12 @@
                 </div>
                 <div class="currency-input">
                     <label>Moneda destino:</label>
-                    <select x-model="currencies.target.code" @change="updateCurrencySymbol('target')">
+                    <select x-model="currencies.target.code" @change="updateCurrencySymbol('target')" :disabled="expenses.length > 0">
                         <template x-for="(currency, code) in supportedCurrencies" :key="code">
                             <option :value="code" :selected="code === currencies.target.code" x-text="currency.name + ' (' + currency.symbol + ')'"></option>
                         </template>
                     </select>
+                    <small x-show="expenses.length > 0">La moneda destino queda fija una vez hay gastos registrados.</small>
                 </div>
                 <button @click="saveCurrencies()">Guardar</button>
             </div>
@@ -96,7 +97,7 @@
             <div class="input-group">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <label style="margin-bottom: 0;">Importe (1 <span x-text="currencies.source.code"></span> = <span x-text="formatExchangeRate(exchangeRate)"></span><span x-text="currencies.target.symbol"></span>)</label>
-                    <button x-show="!expenses.length" type="button" class="link-button" @click="showCurrencyEditor = !showCurrencyEditor">editar</button>
+                    <button type="button" class="link-button" @click="showCurrencyEditor = !showCurrencyEditor">editar</button>
                 </div>
                 <div class="expense-input-row">
                     <div class="amount-input">
