@@ -366,34 +366,38 @@ document.addEventListener('alpine:init', () => {
         renderSummaryMap() {
             if (!this.maps.summary) return;
 
-            // The container can be display:none (x-show) when initSummaryMap() first runs,
-            // so Leaflet may have cached a 0x0 size — re-measure before rendering.
-            this.maps.summary.invalidateSize();
+            // x-show on the section may still be mid-flush (e.g. just went from 0 to
+            // 1 located expense) — wait for Alpine's DOM update so the container is
+            // actually visible before Leaflet measures it, otherwise invalidateSize()
+            // below re-caches a stale 0x0 size.
+            this.$nextTick(() => {
+                this.maps.summary.invalidateSize();
 
-            this.summaryMarkerCluster.clearLayers();
+                this.summaryMarkerCluster.clearLayers();
 
-            const located = this.expenses.filter(e => e.coords);
-            located.forEach(expense => {
-                const amountLabel = this.formatCurrencyAmount(
-                    expense.amount * expense.units,
-                    expense.currency.symbol
-                );
-                const dateLabel = new Date(expense.date).toLocaleDateString('es-ES');
-                const noteLine = expense.note
-                    ? `<br>${this.escapeHtml(expense.note)}`
-                    : '';
+                const located = this.expenses.filter(e => e.coords);
+                located.forEach(expense => {
+                    const amountLabel = this.formatCurrencyAmount(
+                        expense.amount * expense.units,
+                        expense.currency.symbol
+                    );
+                    const dateLabel = new Date(expense.date).toLocaleDateString('es-ES');
+                    const noteLine = expense.note
+                        ? `<br>${this.escapeHtml(expense.note)}`
+                        : '';
 
-                L.marker(expense.coords)
-                    .bindPopup(`${amountLabel}${noteLine}<br>${dateLabel}`)
-                    .addTo(this.summaryMarkerCluster);
-            });
-
-            if (located.length > 0) {
-                this.maps.summary.fitBounds(this.summaryMarkerCluster.getBounds(), {
-                    padding: [20, 20],
-                    maxZoom: 15
+                    L.marker(expense.coords)
+                        .bindPopup(`${amountLabel}${noteLine}<br>${dateLabel}`)
+                        .addTo(this.summaryMarkerCluster);
                 });
-            }
+
+                if (located.length > 0) {
+                    this.maps.summary.fitBounds(this.summaryMarkerCluster.getBounds(), {
+                        padding: [20, 20],
+                        maxZoom: 15
+                    });
+                }
+            });
         },
 
         toggleDayExpansion(dateKey) {
