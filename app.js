@@ -128,7 +128,8 @@ document.addEventListener('alpine:init', () => {
         // Métodos
         updateConversion() {
             const amount = parseFloat(this.newExpense.amount) || 0;
-            this.convertedAmount = (amount * this.exchangeRate).toFixed(2);
+            const rate = this.editingExpenseId ? this.newExpense.exchangeRate : this.exchangeRate;
+            this.convertedAmount = (amount * rate).toFixed(2);
         },
 
         incrementUnits() {
@@ -213,7 +214,9 @@ document.addEventListener('alpine:init', () => {
                     coords: expense.coords,
                     dateInput: date.toISOString().split('T')[0],
                     timeInput: date.toTimeString().slice(0, 5),
-                    note: expense.note || ''
+                    note: expense.note || '',
+                    currency: { ...expense.currency },
+                    exchangeRate: expense.exchangeRate
                 };
                 this.updateConversion();
 
