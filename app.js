@@ -181,7 +181,9 @@ document.addEventListener('alpine:init', () => {
                 location: '',
                 coords: this.currentLocation ? { ...this.currentLocation } : null,
                 tag: '',
-                note: ''
+                note: '',
+                currency: { ...this.currencies.source },
+                exchangeRate: this.exchangeRate
             };
             this.showNewExpenseTagEditor = false;
             this.convertedAmount = '0.00';
