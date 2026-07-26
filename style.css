@@ -152,11 +152,11 @@ input {
     }
 
     .amount-input input {
-        width: 70px;
+        width: 100px;
     }
 
     .amount-input .converted-amount {
-        min-width: 0;
+        min-width: 50px;
         font-size: 0.8rem;
     }
 
