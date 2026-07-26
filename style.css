@@ -452,6 +452,14 @@ input {
     width: 100%;
 }
 
+.summary-map-container .map-container {
+    height: 300px;
+}
+
+.summary-map-section {
+    margin-top: 16px;
+}
+
 .map-button {
     background: none;
     border: none;
