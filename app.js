@@ -25,7 +25,8 @@ document.addEventListener('alpine:init', () => {
             COP: { code: 'COP', symbol: '$', name: 'Colombian Peso' },
             PLN: { code: 'PLN', symbol: 'zł', name: 'Polish Złoty' },
             CRC: { code: 'CRC', symbol: '₡', name: 'Costa Rican Colón' },
-            MUR: { code: 'MUR', symbol: '₨', name: 'Mauritian Rupee' }
+            MUR: { code: 'MUR', symbol: '₨', name: 'Mauritian Rupee' },
+            CAD: { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' }
         },
         currencies: {
             source: {
