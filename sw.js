@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gastorade-v3';
+const CACHE_NAME = 'gastorade-v4';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -8,7 +8,10 @@ const urlsToCache = [
   '/gastorade.jpg',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css',
+  'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css',
+  'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js'
 ];
 
 self.addEventListener('install', (event) => {
