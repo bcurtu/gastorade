@@ -120,17 +120,6 @@ input {
     gap: 24px;
 }
 
-@media (max-width: 480px) {
-    .expense-input-row {
-        flex-wrap: wrap;
-        row-gap: 8px;
-    }
-
-    .units-control {
-        margin-left: 44px;
-    }
-}
-
 .amount-input {
     display: flex;
     align-items: center;
@@ -151,6 +140,35 @@ input {
     font-size: 0.95rem;
     min-width: 80px;
     display: inline-block;
+}
+
+@media (max-width: 480px) {
+    .expense-input-row {
+        gap: 8px;
+    }
+
+    .amount-input {
+        gap: 6px;
+    }
+
+    .amount-input input {
+        width: 70px;
+    }
+
+    .amount-input .converted-amount {
+        min-width: 0;
+        font-size: 0.8rem;
+    }
+
+    .units-control {
+        padding: 4px 8px;
+        gap: 4px;
+    }
+
+    .units-control button {
+        width: 24px;
+        height: 24px;
+    }
 }
 
 .converted-amount {
