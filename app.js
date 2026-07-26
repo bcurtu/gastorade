@@ -366,6 +366,10 @@ document.addEventListener('alpine:init', () => {
         renderSummaryMap() {
             if (!this.maps.summary) return;
 
+            // The container can be display:none (x-show) when initSummaryMap() first runs,
+            // so Leaflet may have cached a 0x0 size — re-measure before rendering.
+            this.maps.summary.invalidateSize();
+
             this.summaryMarkerCluster.clearLayers();
 
             const located = this.expenses.filter(e => e.coords);
