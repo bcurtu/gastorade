@@ -546,6 +546,8 @@ document.addEventListener('alpine:init', () => {
 
             // Convertir a array y ordenar
             this.groupedExpenses = Object.values(groups);
+
+            this.renderSummaryMap();
         },
 
         calculateAnalytics() {
