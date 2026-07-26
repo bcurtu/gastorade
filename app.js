@@ -345,6 +345,52 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        initSummaryMap() {
+            if (this.maps.summary) return;
+
+            this.maps.summary = L.map('summary-map');
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(this.maps.summary);
+
+            this.summaryMarkerCluster = L.markerClusterGroup();
+            this.maps.summary.addLayer(this.summaryMarkerCluster);
+
+            const fallbackCenter = this.currentLocation || { lat: 20, lng: 0 };
+            this.maps.summary.setView(fallbackCenter, this.currentLocation ? 12 : 2);
+
+            this.renderSummaryMap();
+        },
+
+        renderSummaryMap() {
+            if (!this.maps.summary) return;
+
+            this.summaryMarkerCluster.clearLayers();
+
+            const located = this.expenses.filter(e => e.coords);
+            located.forEach(expense => {
+                const amountLabel = this.formatCurrencyAmount(
+                    expense.amount * expense.units,
+                    expense.currency.symbol
+                );
+                const dateLabel = new Date(expense.date).toLocaleDateString('es-ES');
+                const noteLine = expense.note
+                    ? `<br>${this.escapeHtml(expense.note)}`
+                    : '';
+
+                L.marker(expense.coords)
+                    .bindPopup(`${amountLabel}${noteLine}<br>${dateLabel}`)
+                    .addTo(this.summaryMarkerCluster);
+            });
+
+            if (located.length > 0) {
+                this.maps.summary.fitBounds(this.summaryMarkerCluster.getBounds(), {
+                    padding: [20, 20],
+                    maxZoom: 15
+                });
+            }
+        },
+
         toggleDayExpansion(dateKey) {
             if (this.expandedDays.has(dateKey)) {
                 this.expandedDays.delete(dateKey);
