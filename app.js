@@ -48,7 +48,12 @@ document.addEventListener('alpine:init', () => {
             date: new Date(),
             location: '',
             coords: null,
-            note: ''
+            note: '',
+            currency: {
+                code: localStorage.getItem('sourceCurrency') || 'THB',
+                symbol: localStorage.getItem('sourceCurrencySymbol') || '฿'
+            },
+            exchangeRate: parseFloat(localStorage.getItem('exchangeRate')) || 0.026
         },
         convertedAmount: '0.00',
         expenses: JSON.parse(localStorage.getItem('expenses') || '[]'),
@@ -645,6 +650,9 @@ document.addEventListener('alpine:init', () => {
                         this.currencies.source.symbol = data.sourceCurrencySymbol || '฿';
                         this.currencies.target.code = data.targetCurrency || 'EUR';
                         this.currencies.target.symbol = data.targetCurrencySymbol || '€';
+
+                        // Backfill currency on expenses imported from a pre-multicurrency backup
+                        this.migrateExpenseCurrencies();
 
                         // Save to localStorage
                         localStorage.setItem('expenses', JSON.stringify(this.expenses));
