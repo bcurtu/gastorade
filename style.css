@@ -120,6 +120,17 @@ input {
     gap: 24px;
 }
 
+@media (max-width: 480px) {
+    .expense-input-row {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+
+    .units-control {
+        margin-left: 44px;
+    }
+}
+
 .amount-input {
     display: flex;
     align-items: center;
