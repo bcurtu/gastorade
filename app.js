@@ -379,7 +379,7 @@ document.addEventListener('alpine:init', () => {
                 located.forEach(expense => {
                     const amountLabel = this.formatCurrencyAmount(
                         expense.amount * expense.units,
-                        expense.currency.symbol
+                        this.escapeHtml(expense.currency.symbol)
                     );
                     const dateLabel = new Date(expense.date).toLocaleDateString('es-ES');
                     const noteLine = expense.note
