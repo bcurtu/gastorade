@@ -73,6 +73,7 @@ document.addEventListener('alpine:init', () => {
         tagInput: '',
         editingExpenseId: null,
         maps: {},
+        summaryMarkerCluster: null,
         currentLocation: null,
         expandedDays: new Set(),
 
@@ -407,6 +408,12 @@ document.addEventListener('alpine:init', () => {
             } else {
                 return `${formattedAmount} ${symbol}`;
             }
+        },
+
+        escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         },
 
         formatSourceAmount(amount) {
