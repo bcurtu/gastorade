@@ -185,7 +185,7 @@
                                         <div class="expense-details">
                                             <div class="expense-top">
                                                 <div class="expense-amount">
-                                                    <span x-html="formatSourceAmount(expense.amount * expense.units)"></span>
+                                                    <span x-html="formatCurrencyAmount(expense.amount * expense.units, expense.currency.symbol)"></span>
                                                     <span class="eur" x-html="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ')'"></span>
                                                 </div>
                                                 <div class="expense-actions">
