@@ -346,6 +346,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         initSummaryMap() {
+            // Never re-created once set — no .remove() here on purpose, unlike showExpenseLocation()
             if (this.maps.summary) return;
 
             this.maps.summary = L.map('summary-map');
