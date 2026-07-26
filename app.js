@@ -23,7 +23,8 @@ document.addEventListener('alpine:init', () => {
             INR: { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
             MXN: { code: 'MXN', symbol: '$', name: 'Mexican Peso' },
             COP: { code: 'COP', symbol: '$', name: 'Colombian Peso' },
-            PLN: { code: 'PLN', symbol: 'zł', name: 'Polish Złoty' }
+            PLN: { code: 'PLN', symbol: 'zł', name: 'Polish Złoty' },
+            CRC: { code: 'CRC', symbol: '₡', name: 'Costa Rican Colón' }
         },
         currencies: {
             source: {
