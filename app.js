@@ -1,7 +1,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('expenseCalculator', () => ({
         // Database version
-        DB_VERSION: '1.0',
+        DB_VERSION: '1.1',
 
         // Estado
         supportedCurrencies: {
@@ -73,6 +73,8 @@ document.addEventListener('alpine:init', () => {
 
         // Inicialización
         init() {
+            this.migrateExpenseCurrencies();
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(pos => {
                     this.currentLocation = {
@@ -153,6 +155,7 @@ document.addEventListener('alpine:init', () => {
                 id: Date.now().toString(),
                 amount: amount,
                 units: this.newExpense.units,
+                currency: { code: this.currencies.source.code, symbol: this.currencies.source.symbol },
                 exchangeRate: this.exchangeRate,
                 date: new Date(),
                 location: this.newExpense.location,
@@ -348,6 +351,22 @@ document.addEventListener('alpine:init', () => {
             const currency = this.supportedCurrencies[this.currencies[type].code];
             if (currency) {
                 this.currencies[type].symbol = currency.symbol;
+            }
+        },
+
+        migrateExpenseCurrencies() {
+            let migrated = false;
+            this.expenses.forEach(expense => {
+                if (!expense.currency) {
+                    expense.currency = {
+                        code: this.currencies.source.code,
+                        symbol: this.currencies.source.symbol
+                    };
+                    migrated = true;
+                }
+            });
+            if (migrated) {
+                localStorage.setItem('expenses', JSON.stringify(this.expenses));
             }
         },
 
