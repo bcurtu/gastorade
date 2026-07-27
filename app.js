@@ -343,6 +343,12 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        cleanupMaps() {
+            Object.values(this.maps).forEach(map => map.remove());
+            this.maps = {};
+            this.summaryMarkerCluster = null;
+        },
+
         initSummaryMap() {
             // Never re-created once set — no .remove() here on purpose, unlike showExpenseLocation()
             if (this.maps.summary) return;
