@@ -179,7 +179,7 @@
         <div class="expenses-list">
             <h2>Gastos Guardados</h2>
 
-            <template x-for="(day, index) in groupedExpenses" :key="day.dateKey">
+            <template x-for="(day, index) in groupedExpenses" :key="activeSheetId + '_' + day.dateKey">
                 <div class="day-group">
                     <div class="day-header" @click="toggleDayExpansion(day.dateKey)">
                         <div class="day-header-content">
