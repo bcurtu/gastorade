@@ -347,6 +347,7 @@ document.addEventListener('alpine:init', () => {
             Object.values(this.maps).forEach(map => map.remove());
             this.maps = {};
             this.summaryMarkerCluster = null;
+            this.marker = null;
         },
 
         initSummaryMap() {
