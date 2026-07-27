@@ -560,6 +560,12 @@ document.addEventListener('alpine:init', () => {
             this.showSheetSelector = false;
             this.sheetRenameInput = '';
 
+            // cleanupMaps() above wiped this.maps.summary along with the per-expense
+            // maps; initSummaryMap() only (re)creates it when missing, so it must be
+            // called again here or the summary map stays blank for the rest of the
+            // session (see initSummaryMap's own guard comment).
+            this.initSummaryMap();
+
             this.groupExpensesByDay();
             this.checkExchangeRate();
         },
