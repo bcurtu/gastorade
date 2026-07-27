@@ -89,7 +89,8 @@
                         <input
                             type="text"
                             placeholder="Renombrar hoja activa"
-                            @keydown.enter="renameSheet(activeSheetId, $event.target.value); $event.target.value = ''"
+                            x-model="sheetRenameInput"
+                            @keydown.enter="renameSheet(activeSheetId, sheetRenameInput); sheetRenameInput = ''"
                         >
                     </div>
 

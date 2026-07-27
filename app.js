@@ -70,6 +70,7 @@ document.addEventListener('alpine:init', () => {
         sheets: [],
         activeSheetId: null,
         showSheetSelector: false,
+        sheetRenameInput: '',
 
         // Inicialización
         init() {
@@ -101,10 +102,19 @@ document.addEventListener('alpine:init', () => {
                     // Find the specific tag editor that's open
                     const clickedInsideTagEditor = e.target.closest('.tag-editor');
                     const clickedOnTagButton = e.target.closest('.expense-tag');
-                    
+
                     // If we clicked outside both the tag editor and tag buttons, close it
                     if (!clickedInsideTagEditor && !clickedOnTagButton) {
                         this.showTagEditor = null;
+                    }
+                }
+
+                if (this.showSheetSelector) {
+                    const clickedInsideSheetSelector = e.target.closest('.sheet-selector');
+
+                    // If we clicked outside the sheet selector entirely, close it
+                    if (!clickedInsideSheetSelector) {
+                        this.showSheetSelector = false;
                     }
                 }
             });
@@ -548,6 +558,7 @@ document.addEventListener('alpine:init', () => {
             const today = new Date().toISOString().split('T')[0];
             this.expandedDays = new Set([today]);
             this.showSheetSelector = false;
+            this.sheetRenameInput = '';
 
             this.groupExpensesByDay();
             this.checkExchangeRate();
