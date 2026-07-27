@@ -512,6 +512,77 @@ document.addEventListener('alpine:init', () => {
             localStorage.setItem('sheets', JSON.stringify(this.sheets));
         },
 
+        addSheet() {
+            const id = Date.now().toString();
+            const sheet = {
+                id,
+                name: '',
+                isCustomName: false,
+                createdAt: new Date().toISOString(),
+                expenses: [],
+                currencies: {
+                    source: { code: 'THB', symbol: '฿' },
+                    target: { ...this.currencies.target }
+                },
+                exchangeRate: 0,
+                lastRateUpdate: null
+            };
+            sheet.name = this.computeSheetName(sheet);
+            this.sheets.push(sheet);
+            localStorage.setItem('sheets', JSON.stringify(this.sheets));
+            this.selectSheet(id);
+        },
+
+        selectSheet(id) {
+            if (!this.sheets.find(s => s.id === id)) return;
+
+            this.cancelEdit();
+            this.cleanupMaps();
+
+            this.activeSheetId = id;
+            localStorage.setItem('activeSheetId', id);
+            this.loadActiveSheetIntoState();
+
+            this.resetForm();
+            const today = new Date().toISOString().split('T')[0];
+            this.expandedDays = new Set([today]);
+            this.showSheetSelector = false;
+
+            this.groupExpensesByDay();
+            this.checkExchangeRate();
+        },
+
+        renameSheet(id, newName) {
+            const sheet = this.sheets.find(s => s.id === id);
+            if (!sheet) return;
+            const trimmed = (newName || '').trim();
+            if (!trimmed) {
+                sheet.isCustomName = false;
+                sheet.name = this.computeSheetName(sheet);
+            } else {
+                sheet.isCustomName = true;
+                sheet.name = trimmed;
+            }
+            localStorage.setItem('sheets', JSON.stringify(this.sheets));
+        },
+
+        deleteSheet(id) {
+            const sheet = this.sheets.find(s => s.id === id);
+            if (!sheet) return;
+            if (!confirm(`¿Seguro que quieres eliminar la hoja "${sheet.name}"? Esta acción no se puede deshacer.`)) return;
+
+            this.sheets = this.sheets.filter(s => s.id !== id);
+            localStorage.setItem('sheets', JSON.stringify(this.sheets));
+
+            if (this.activeSheetId === id) {
+                if (this.sheets.length === 0) {
+                    this.addSheet();
+                } else {
+                    this.selectSheet(this.sheets[0].id);
+                }
+            }
+        },
+
         saveCurrencies() {
             // Update symbols before saving
             this.updateCurrencySymbol('source');
