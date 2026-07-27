@@ -72,6 +72,31 @@
         <div class="header">
             <h1><img src="gastorade.jpg" alt="" class="header-icon">Gastorade</h1>
 
+            <div class="sheet-selector">
+                <button type="button" class="link-button" @click="showSheetSelector = !showSheetSelector">
+                    📑 <span x-text="sheets.find(s => s.id === activeSheetId)?.name"></span> ▾
+                </button>
+
+                <div x-show="showSheetSelector" class="sheet-panel">
+                    <template x-for="sheet in sheets" :key="sheet.id">
+                        <div class="sheet-item" :class="{ active: sheet.id === activeSheetId }">
+                            <span @click="selectSheet(sheet.id)" x-text="sheet.name"></span>
+                            <button type="button" class="icon-button delete" @click="deleteSheet(sheet.id)" title="Borrar hoja">🗑️</button>
+                        </div>
+                    </template>
+
+                    <div class="sheet-rename">
+                        <input
+                            type="text"
+                            placeholder="Renombrar hoja activa"
+                            @keydown.enter="renameSheet(activeSheetId, $event.target.value); $event.target.value = ''"
+                        >
+                    </div>
+
+                    <button type="button" class="secondary-button" @click="addSheet()">+ Añadir hoja</button>
+                </div>
+            </div>
+
             <div x-show="showCurrencyEditor" class="currency-editor">
                 <div class="currency-input">
                     <label>Moneda origen:</label>

@@ -548,6 +548,62 @@ input {
     background-color: #1565c0;
 }
 
+.sheet-selector {
+    margin-top: 12px;
+}
+
+.sheet-selector > button {
+    background: none;
+    border: none;
+    color: white;
+    padding: 0;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.sheet-selector > button:hover {
+    text-decoration: underline;
+}
+
+.sheet-panel {
+    background: #f5f5f5;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sheet-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #ddd;
+}
+
+.sheet-item span:first-child {
+    color: #333;
+    cursor: pointer;
+    flex: 1;
+}
+
+.sheet-item.active {
+    border-color: #1976d2;
+    background: #e3f2fd;
+}
+
+.sheet-rename input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
 .analytics-section {
     margin-top: 32px;
     padding: 24px;
