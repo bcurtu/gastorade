@@ -149,7 +149,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         saveExchangeRate() {
-            localStorage.setItem('exchangeRate', this.exchangeRate);
+            this.saveActiveSheet();
         },
 
         saveExpense() {
@@ -171,7 +171,7 @@ document.addEventListener('alpine:init', () => {
             };
 
             this.expenses.push(expense);
-            localStorage.setItem('expenses', JSON.stringify(this.expenses));
+            this.saveActiveSheet();
             this.resetForm();
             this.groupExpensesByDay();
             this.showCurrencyEditor = false; // Close currency editor if open
@@ -201,7 +201,7 @@ document.addEventListener('alpine:init', () => {
             const index = this.expenses.findIndex(e => e.id === id);
             if (index !== -1) {
                 this.expenses[index].tag = category.emoji;
-                localStorage.setItem('expenses', JSON.stringify(this.expenses));
+                this.saveActiveSheet();
                 this.showTagEditor = null;
                 this.groupExpensesByDay();
             }
@@ -288,7 +288,7 @@ document.addEventListener('alpine:init', () => {
                     note: (this.newExpense.note || '').slice(0, 24)
                 };
 
-                localStorage.setItem('expenses', JSON.stringify(this.expenses));
+                this.saveActiveSheet();
                 this.editingExpenseId = null;
                 this.resetForm();
                 this.groupExpensesByDay();
@@ -303,7 +303,7 @@ document.addEventListener('alpine:init', () => {
         deleteExpense(id) {
             if (confirm('¿Seguro que quieres eliminar este gasto?')) {
                 this.expenses = this.expenses.filter(e => e.id !== id);
-                localStorage.setItem('expenses', JSON.stringify(this.expenses));
+                this.saveActiveSheet();
                 this.groupExpensesByDay();
             }
         },
@@ -492,15 +492,26 @@ document.addEventListener('alpine:init', () => {
             this.lastRateUpdate = sheet.lastRateUpdate;
         },
 
+        saveActiveSheet() {
+            const sheet = this.sheets.find(s => s.id === this.activeSheetId);
+            if (!sheet) return;
+            sheet.expenses = this.expenses;
+            sheet.currencies = {
+                source: { ...this.currencies.source },
+                target: { ...this.currencies.target }
+            };
+            sheet.exchangeRate = this.exchangeRate;
+            sheet.lastRateUpdate = this.lastRateUpdate;
+            if (!sheet.isCustomName) sheet.name = this.computeSheetName(sheet);
+            localStorage.setItem('sheets', JSON.stringify(this.sheets));
+        },
+
         saveCurrencies() {
             // Update symbols before saving
             this.updateCurrencySymbol('source');
             this.updateCurrencySymbol('target');
 
-            localStorage.setItem('sourceCurrency', this.currencies.source.code);
-            localStorage.setItem('sourceCurrencySymbol', this.currencies.source.symbol);
-            localStorage.setItem('targetCurrency', this.currencies.target.code);
-            localStorage.setItem('targetCurrencySymbol', this.currencies.target.symbol);
+            this.saveActiveSheet();
             this.showCurrencyEditor = false;
 
             // Update exchange rate with new currencies
@@ -667,7 +678,7 @@ document.addEventListener('alpine:init', () => {
         resetData() {
             if (confirm('¿Estás seguro de que quieres borrar todos los gastos? Esta acción no se puede deshacer.')) {
                 this.expenses = [];
-                localStorage.removeItem('expenses');
+                this.saveActiveSheet();
                 this.groupExpensesByDay();
             }
         },
@@ -691,8 +702,7 @@ document.addEventListener('alpine:init', () => {
                     this.lastRateUpdate = new Date().toISOString().split('T')[0];
 
                     // Save to localStorage
-                    localStorage.setItem('exchangeRate', this.exchangeRate);
-                    localStorage.setItem('lastRateUpdate', this.lastRateUpdate);
+                    this.saveActiveSheet();
 
                     // Show success message
                     alert(`Tipo de cambio actualizado: 1 ${this.currencies.source.code} = ${this.exchangeRate} ${this.currencies.target.code}`);
