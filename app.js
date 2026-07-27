@@ -792,10 +792,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         exportDatabase() {
+            const activeSheet = this.sheets.find(s => s.id === this.activeSheetId);
             const data = {
                 version: this.DB_VERSION,
                 exportDate: new Date().toISOString(),
                 data: {
+                    name: activeSheet ? activeSheet.name : '',
+                    isCustomName: activeSheet ? activeSheet.isCustomName : false,
                     expenses: this.expenses,
                     exchangeRate: this.exchangeRate,
                     lastRateUpdate: this.lastRateUpdate,
@@ -845,36 +848,45 @@ document.addEventListener('alpine:init', () => {
                         }
 
                         // Confirm import
-                        if (!confirm('¿Estás seguro de que quieres importar estos datos? Esto sobrescribirá todos los datos actuales.')) {
+                        if (!confirm('Se añadirá como una hoja nueva, sin tocar las hojas existentes. ¿Continuar?')) {
                             return;
                         }
 
-                        // Import data
+                        // Build a new sheet from the imported data
                         const data = importedData.data;
-                        this.expenses = data.expenses || [];
-                        this.exchangeRate = data.exchangeRate || 0.026;
-                        this.lastRateUpdate = data.lastRateUpdate || null;
-                        this.currencies.source.code = data.sourceCurrency || 'THB';
-                        this.currencies.source.symbol = data.sourceCurrencySymbol || '฿';
-                        this.currencies.target.code = data.targetCurrency || 'EUR';
-                        this.currencies.target.symbol = data.targetCurrencySymbol || '€';
+                        const expenses = data.expenses || [];
+                        const sourceCurrency = {
+                            code: data.sourceCurrency || 'THB',
+                            symbol: data.sourceCurrencySymbol || '฿'
+                        };
 
                         // Backfill currency on expenses imported from a pre-multicurrency backup
-                        this.backfillExpenseCurrency(this.expenses, this.currencies.source);
+                        this.backfillExpenseCurrency(expenses, sourceCurrency);
 
-                        // Save to localStorage
-                        localStorage.setItem('expenses', JSON.stringify(this.expenses));
-                        localStorage.setItem('exchangeRate', this.exchangeRate);
-                        localStorage.setItem('lastRateUpdate', this.lastRateUpdate);
-                        localStorage.setItem('sourceCurrency', this.currencies.source.code);
-                        localStorage.setItem('sourceCurrencySymbol', this.currencies.source.symbol);
-                        localStorage.setItem('targetCurrency', this.currencies.target.code);
-                        localStorage.setItem('targetCurrencySymbol', this.currencies.target.symbol);
+                        const sheet = {
+                            id: Date.now().toString(),
+                            name: data.name || '',
+                            isCustomName: !!data.isCustomName,
+                            createdAt: new Date().toISOString(),
+                            expenses: expenses,
+                            currencies: {
+                                source: sourceCurrency,
+                                target: {
+                                    code: data.targetCurrency || 'EUR',
+                                    symbol: data.targetCurrencySymbol || '€'
+                                }
+                            },
+                            exchangeRate: data.exchangeRate || 0.026,
+                            lastRateUpdate: data.lastRateUpdate || null
+                        };
 
-                        // Update UI
-                        this.groupExpensesByDay();
+                        if (!sheet.name) sheet.name = this.computeSheetName(sheet);
 
-                        alert('Datos importados correctamente.');
+                        this.sheets.push(sheet);
+                        localStorage.setItem('sheets', JSON.stringify(this.sheets));
+                        this.selectSheet(sheet.id);
+
+                        alert('Datos importados correctamente como una nueva hoja.');
                     } catch (error) {
                         console.error('Error importing data:', error);
                         alert('Error al importar los datos. Asegúrate de que el archivo sea válido.');
