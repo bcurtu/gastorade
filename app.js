@@ -1,7 +1,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('expenseCalculator', () => ({
         // Database version
-        DB_VERSION: '1.1',
+        DB_VERSION: '2.0',
 
         // Estado
         supportedCurrencies: {
@@ -29,17 +29,11 @@ document.addEventListener('alpine:init', () => {
             CAD: { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' }
         },
         currencies: {
-            source: {
-                code: localStorage.getItem('sourceCurrency') || 'THB',
-                symbol: localStorage.getItem('sourceCurrencySymbol') || '฿'
-            },
-            target: {
-                code: localStorage.getItem('targetCurrency') || 'EUR',
-                symbol: localStorage.getItem('targetCurrencySymbol') || '€'
-            }
+            source: { code: 'THB', symbol: '฿' },
+            target: { code: 'EUR', symbol: '€' }
         },
-        exchangeRate: parseFloat(localStorage.getItem('exchangeRate')) || 0.026,
-        lastRateUpdate: localStorage.getItem('lastRateUpdate') || null,
+        exchangeRate: 0.026,
+        lastRateUpdate: null,
         showRateEditor: false,
         showCurrencyEditor: false,
         newExpense: {
@@ -49,14 +43,11 @@ document.addEventListener('alpine:init', () => {
             location: '',
             coords: null,
             note: '',
-            currency: {
-                code: localStorage.getItem('sourceCurrency') || 'THB',
-                symbol: localStorage.getItem('sourceCurrencySymbol') || '฿'
-            },
-            exchangeRate: parseFloat(localStorage.getItem('exchangeRate')) || 0.026
+            currency: { code: 'THB', symbol: '฿' },
+            exchangeRate: 0.026
         },
         convertedAmount: '0.00',
-        expenses: JSON.parse(localStorage.getItem('expenses') || '[]'),
+        expenses: [],
         showTagEditor: null,
         showNewExpenseTagEditor: false,
         tagCategories: [
@@ -76,10 +67,17 @@ document.addEventListener('alpine:init', () => {
         summaryMarkerCluster: null,
         currentLocation: null,
         expandedDays: new Set(),
+        sheets: [],
+        activeSheetId: null,
+        showSheetSelector: false,
 
         // Inicialización
         init() {
-            this.migrateExpenseCurrencies();
+            this.migrateToSheets();
+            this.sheets = JSON.parse(localStorage.getItem('sheets') || '[]');
+            this.activeSheetId = localStorage.getItem('activeSheetId');
+            this.loadActiveSheetIntoState();
+            this.resetForm();
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(pos => {
@@ -420,20 +418,78 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        migrateExpenseCurrencies() {
-            let migrated = false;
-            this.expenses.forEach(expense => {
+        backfillExpenseCurrency(expenses, fallbackCurrency) {
+            expenses.forEach(expense => {
                 if (!expense.currency) {
-                    expense.currency = {
-                        code: this.currencies.source.code,
-                        symbol: this.currencies.source.symbol
-                    };
-                    migrated = true;
+                    expense.currency = { ...fallbackCurrency };
                 }
             });
-            if (migrated) {
-                localStorage.setItem('expenses', JSON.stringify(this.expenses));
-            }
+        },
+
+        computeSheetName(sheet) {
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const firstDate = sheet.expenses.length
+                ? new Date(Math.min(...sheet.expenses.map(e => new Date(e.date).getTime())))
+                : new Date(sheet.createdAt);
+            const label = months[firstDate.getMonth()] + String(firstDate.getFullYear()).slice(-2);
+
+            const codes = [];
+            [...sheet.expenses]
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .forEach(expense => {
+                    if (!codes.includes(expense.currency.code)) codes.push(expense.currency.code);
+                });
+
+            const currencyPart = codes.slice(0, 2).join('+');
+            return currencyPart ? `${label} ${currencyPart}` : label;
+        },
+
+        migrateToSheets() {
+            if (localStorage.getItem('sheets')) return;
+
+            const legacyExpenses = JSON.parse(localStorage.getItem('expenses') || 'null');
+
+            const sheet = {
+                id: Date.now().toString(),
+                name: '',
+                isCustomName: false,
+                createdAt: new Date().toISOString(),
+                expenses: legacyExpenses || [],
+                currencies: {
+                    source: {
+                        code: localStorage.getItem('sourceCurrency') || 'THB',
+                        symbol: localStorage.getItem('sourceCurrencySymbol') || '฿'
+                    },
+                    target: {
+                        code: localStorage.getItem('targetCurrency') || 'EUR',
+                        symbol: localStorage.getItem('targetCurrencySymbol') || '€'
+                    }
+                },
+                exchangeRate: parseFloat(localStorage.getItem('exchangeRate')) || 0.026,
+                lastRateUpdate: localStorage.getItem('lastRateUpdate') || null
+            };
+
+            this.backfillExpenseCurrency(sheet.expenses, sheet.currencies.source);
+            sheet.name = this.computeSheetName(sheet);
+
+            localStorage.setItem('sheets', JSON.stringify([sheet]));
+            localStorage.setItem('activeSheetId', sheet.id);
+
+            ['expenses', 'exchangeRate', 'lastRateUpdate', 'sourceCurrency',
+             'sourceCurrencySymbol', 'targetCurrency', 'targetCurrencySymbol']
+                .forEach(key => localStorage.removeItem(key));
+        },
+
+        loadActiveSheetIntoState() {
+            const sheet = this.sheets.find(s => s.id === this.activeSheetId);
+            if (!sheet) return;
+            this.expenses = sheet.expenses;
+            this.currencies = {
+                source: { ...sheet.currencies.source },
+                target: { ...sheet.currencies.target }
+            };
+            this.exchangeRate = sheet.exchangeRate;
+            this.lastRateUpdate = sheet.lastRateUpdate;
         },
 
         saveCurrencies() {
@@ -716,7 +772,7 @@ document.addEventListener('alpine:init', () => {
                         this.currencies.target.symbol = data.targetCurrencySymbol || '€';
 
                         // Backfill currency on expenses imported from a pre-multicurrency backup
-                        this.migrateExpenseCurrencies();
+                        this.backfillExpenseCurrency(this.expenses, this.currencies.source);
 
                         // Save to localStorage
                         localStorage.setItem('expenses', JSON.stringify(this.expenses));
