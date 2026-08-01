@@ -238,32 +238,46 @@ document.addEventListener('alpine:init', () => {
 
                 // Scroll to form and add flash effect
                 setTimeout(() => {
-                    const form = document.querySelector('.expense-calculator[x-show="editingExpenseId"]');
-                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    form.classList.add('highlight-flash');
-
-                    // Initialize map
-                    if (!this.maps[id]) {
-                        this.maps[id] = L.map(this.$refs.editMap);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap contributors'
-                        }).addTo(this.maps[id]);
+                    const form = document.querySelector('.expense-item.editing');
+                    if (form) {
+                        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        form.classList.add('highlight-flash');
+                        setTimeout(() => form.classList.remove('highlight-flash'), 1000);
                     }
 
-                    // Update map with expense location or current location
-                    if (this.newExpense.coords) {
+                    // Initialize map (own key/container, separate from showExpenseLocation's
+                    // per-expense view map, so the two don't fight over the same Leaflet instance)
+                    const mapKey = 'edit-' + id;
+                    if (!this.maps[mapKey]) {
+                        const container = document.getElementById('edit-map-' + id);
+                        if (container) {
+                            this.maps[mapKey] = L.map(container);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '© OpenStreetMap contributors'
+                            }).addTo(this.maps[mapKey]);
+                        }
+                    }
+
+                    // Update map with expense location
+                    if (this.newExpense.coords && this.maps[mapKey]) {
                         if (this.marker) {
                             this.marker.setLatLng(this.newExpense.coords);
                         } else {
-                            this.marker = L.marker(this.newExpense.coords).addTo(this.maps[id]);
+                            this.marker = L.marker(this.newExpense.coords).addTo(this.maps[mapKey]);
                         }
-                        this.maps[id].setView(this.newExpense.coords, 15);
+                        this.maps[mapKey].setView(this.newExpense.coords, 15);
                     }
-
-                    // Remove class after animation ends
-                    setTimeout(() => form.classList.remove('highlight-flash'), 1000);
                 }, 0);
             }
+        },
+
+        cleanupEditMap() {
+            const mapKey = 'edit-' + this.editingExpenseId;
+            if (this.maps[mapKey]) {
+                this.maps[mapKey].remove();
+                delete this.maps[mapKey];
+            }
+            this.marker = null;
         },
 
         updateLocation() {
@@ -274,9 +288,10 @@ document.addEventListener('alpine:init', () => {
                         lng: pos.coords.longitude
                     };
 
-                    if (this.maps[this.editingExpenseId] && this.marker) {
+                    const mapKey = 'edit-' + this.editingExpenseId;
+                    if (this.maps[mapKey] && this.marker) {
                         this.marker.setLatLng(this.newExpense.coords);
-                        this.maps[this.editingExpenseId].setView(this.newExpense.coords, 15);
+                        this.maps[mapKey].setView(this.newExpense.coords, 15);
                     }
                 });
             }
@@ -299,6 +314,7 @@ document.addEventListener('alpine:init', () => {
                 };
 
                 this.saveActiveSheet();
+                this.cleanupEditMap();
                 this.editingExpenseId = null;
                 this.resetForm();
                 this.groupExpensesByDay();
@@ -306,6 +322,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         cancelEdit() {
+            this.cleanupEditMap();
             this.editingExpenseId = null;
             this.resetForm();
         },

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gastorade-v5';
+const CACHE_NAME = 'gastorade-v6';
 const urlsToCache = [
   '/',
   '/index.html',
