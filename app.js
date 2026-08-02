@@ -91,6 +91,7 @@ document.addEventListener('alpine:init', () => {
             this.migrateToSheets();
             this.sheets = JSON.parse(localStorage.getItem('sheets') || '[]');
             this.migrateTagCategories();
+            this.migrateExpenseDates();
             this.activeSheetId = localStorage.getItem('activeSheetId');
             if (!this.sheets.find(s => s.id === this.activeSheetId)) {
                 this.activeSheetId = this.sheets.length ? this.sheets[0].id : null;
@@ -220,9 +221,22 @@ document.addEventListener('alpine:init', () => {
             return this.rateLabelFor(this.exchangeRate, this.currencies.source.symbol, this.currencies.target.symbol);
         },
 
+        // Las fechas de gasto se guardan como hora de pared del lugar donde se
+        // hizo el gasto, con offset: "2026-08-02T14:03:00+09:00". Mostrar y
+        // agrupar lee los componentes del string directamente (hora de pared),
+        // sin convertir al timezone del dispositivo que lo visualiza.
+        toLocalISOString(date) {
+            const pad = n => String(n).padStart(2, '0');
+            const offsetMin = -date.getTimezoneOffset();
+            const sign = offsetMin >= 0 ? '+' : '-';
+            const abs = Math.abs(offsetMin);
+            return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate())
+                + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds())
+                + sign + pad(Math.floor(abs / 60)) + ':' + pad(abs % 60);
+        },
+
         formatTime(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            return dateStr.slice(11, 16);
         },
 
         formatDayLabel(dateKey) {
@@ -379,7 +393,7 @@ document.addEventListener('alpine:init', () => {
                 units: this.newExpense.units,
                 currency: { code: this.currencies.source.code, symbol: this.currencies.source.symbol },
                 exchangeRate: this.exchangeRate,
-                date: new Date().toISOString(),
+                date: this.toLocalISOString(new Date()),
                 location: '',
                 coords: this.saveLocation && this.newExpense.coords ? { ...this.newExpense.coords } : null,
                 showMap: false,
@@ -411,7 +425,6 @@ document.addEventListener('alpine:init', () => {
             const expense = this.expenses.find(e => e.id === id);
             if (!expense) return;
 
-            const date = new Date(expense.date);
             this.editingExpenseId = id;
             this.editMapVisible = false;
             this.swipedExpenseId = null;
@@ -421,8 +434,8 @@ document.addEventListener('alpine:init', () => {
                 date: expense.date,
                 location: expense.location,
                 coords: expense.coords ? { ...expense.coords } : null,
-                dateInput: date.toISOString().split('T')[0],
-                timeInput: date.toTimeString().slice(0, 5),
+                dateInput: expense.date.slice(0, 10),
+                timeInput: expense.date.slice(11, 16),
                 tag: expense.tag || '',
                 note: expense.note || '',
                 currency: { ...expense.currency },
@@ -496,13 +509,14 @@ document.addEventListener('alpine:init', () => {
         updateExpense() {
             const index = this.expenses.findIndex(e => e.id === this.editingExpenseId);
             if (index !== -1) {
-                const dateTime = new Date(this.newExpense.dateInput + 'T' + this.newExpense.timeInput);
+                // El usuario edita en hora de pared del gasto: conservamos su offset original
+                const offset = this.expenses[index].date.slice(-6);
 
                 this.expenses[index] = {
                     ...this.expenses[index],
                     amount: this.parseAmount(this.newExpense.amount),
                     units: this.newExpense.units,
-                    date: dateTime.toISOString(),
+                    date: this.newExpense.dateInput + 'T' + this.newExpense.timeInput + ':00' + offset,
                     location: this.newExpense.location,
                     coords: this.newExpense.coords,
                     tag: this.newExpense.tag || '',
@@ -604,7 +618,7 @@ document.addEventListener('alpine:init', () => {
                         expense.amount * expense.units,
                         this.escapeHtml(expense.currency.symbol)
                     );
-                    const dateLabel = new Date(expense.date).toLocaleDateString('es-ES');
+                    const dateLabel = new Date(expense.date.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-ES');
                     const noteLine = expense.note
                         ? `<br>${this.escapeHtml(expense.note)}`
                         : '';
@@ -767,13 +781,13 @@ document.addEventListener('alpine:init', () => {
         computeSheetName(sheet) {
             const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
             const firstDate = sheet.expenses.length
-                ? new Date(Math.min(...sheet.expenses.map(e => new Date(e.date).getTime())))
-                : new Date(sheet.createdAt);
-            const label = months[firstDate.getMonth()] + String(firstDate.getFullYear()).slice(-2);
+                ? sheet.expenses.map(e => e.date.slice(0, 10)).sort()[0]
+                : sheet.createdAt.slice(0, 10);
+            const label = months[parseInt(firstDate.slice(5, 7), 10) - 1] + firstDate.slice(2, 4);
 
             const codes = [];
             [...sheet.expenses]
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .sort((a, b) => a.date.slice(0, 19).localeCompare(b.date.slice(0, 19)))
                 .forEach(expense => {
                     if (!codes.includes(expense.currency.code)) codes.push(expense.currency.code);
                 });
@@ -794,6 +808,27 @@ document.addEventListener('alpine:init', () => {
                         changed = true;
                     }
                 });
+            });
+            if (changed) localStorage.setItem('sheets', JSON.stringify(this.sheets));
+        },
+
+        // Fechas antiguas (UTC "...Z") → hora de pared con offset. Solo podemos
+        // asumir el timezone actual del dispositivo, es la mejor aproximación.
+        normalizeExpenseDates(expenses) {
+            let changed = false;
+            expenses.forEach(expense => {
+                if (!/[+-]\d{2}:\d{2}$/.test(expense.date)) {
+                    expense.date = this.toLocalISOString(new Date(expense.date));
+                    changed = true;
+                }
+            });
+            return changed;
+        },
+
+        migrateExpenseDates() {
+            let changed = false;
+            this.sheets.forEach(sheet => {
+                if (this.normalizeExpenseDates(sheet.expenses)) changed = true;
             });
             if (changed) localStorage.setItem('sheets', JSON.stringify(this.sheets));
         },
@@ -1015,12 +1050,12 @@ document.addEventListener('alpine:init', () => {
         groupedExpenses: [],
 
         groupExpensesByDay() {
-            const sortedExpenses = [...this.expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+            // Orden y agrupación por hora de pared: el timeline del viaje, no el del visor
+            const sortedExpenses = [...this.expenses].sort((a, b) => b.date.slice(0, 19).localeCompare(a.date.slice(0, 19)));
 
             const groups = {};
             sortedExpenses.forEach(expense => {
-                const date = new Date(expense.date);
-                const dateKey = date.toISOString().split('T')[0];
+                const dateKey = expense.date.slice(0, 10);
 
                 if (!groups[dateKey]) {
                     groups[dateKey] = {
@@ -1227,6 +1262,7 @@ document.addEventListener('alpine:init', () => {
                         };
 
                         this.backfillExpenseCurrency(expenses, sourceCurrency);
+                        this.normalizeExpenseDates(expenses);
 
                         const sheet = {
                             id: Date.now().toString(),
