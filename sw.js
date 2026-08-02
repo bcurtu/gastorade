@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gastorade-v6';
+const CACHE_NAME = 'gastorade-v7';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -6,6 +6,7 @@ const urlsToCache = [
   '/app.js',
   '/manifest.json',
   '/gastorade.jpg',
+  'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -53,8 +54,9 @@ self.addEventListener('fetch', (event) => {
 
         return fetch(event.request).then(
           (response) => {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
+            // Check if we received a valid response. 'cors' is allowed so
+            // cross-origin assets (icon font woff2, map tiles) work offline.
+            if(!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
               return response;
             }
 

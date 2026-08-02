@@ -32,53 +32,82 @@ document.addEventListener('alpine:init', () => {
             source: { code: 'THB', symbol: '฿' },
             target: { code: 'EUR', symbol: '€' }
         },
-        exchangeRate: 0.026,
+        exchangeRate: 0,
         lastRateUpdate: null,
-        showRateEditor: false,
-        showCurrencyEditor: false,
         newExpense: {
             amount: '',
             units: 1,
             date: new Date(),
             location: '',
             coords: null,
+            tag: '',
             note: '',
             currency: { code: 'THB', symbol: '฿' },
-            exchangeRate: 0.026
+            exchangeRate: 0
         },
-        convertedAmount: '0.00',
         expenses: [],
-        showTagEditor: null,
-        showNewExpenseTagEditor: false,
         tagCategories: [
             { emoji: '🍽️', name: 'Comida' },
-            { emoji: '🍺', name: 'Bebidas' },
-            { emoji: '🍭', name: 'Snacks' },
+            { emoji: '🍦', name: 'Snacks' },
+            { emoji: '🛍️', name: 'Compras' },
+            { emoji: '🎟️', name: 'Entradas' },
+            { emoji: '🎢', name: 'Experiencias' },
             { emoji: '🎁', name: 'Regalos' },
-            { emoji: '🏛️', name: 'Museo' },
-            { emoji: '🛶', name: 'Actividades' },
             { emoji: '🚕', name: 'Transporte' },
-            { emoji: '👕', name: 'Ropa' },
-            { emoji: '💊', name: 'Farmacia' }
+            { emoji: '🏨', name: 'Alojamiento' },
+            { emoji: '🏷️', name: 'Otros' }
         ],
-        tagInput: '',
         editingExpenseId: null,
         maps: {},
+        marker: null,
         summaryMarkerCluster: null,
         currentLocation: null,
-        expandedDays: new Set(),
         sheets: [],
         activeSheetId: null,
-        showSheetSelector: false,
-        sheetRenameInput: '',
+
+        // Estado de UI (rediseño "Capturar primero")
+        activeTab: 'add',
+        showDataScreen: false,
+        sheetsSheetOpen: false,
+        settingsSheetOpen: false,
+        currencySheetOpen: false,
+        tagPickerOpen: false,
+        onboardingActive: false,
+        onboardingCancelable: false,
+        onboardingForm: { name: '', source: 'THB', target: 'EUR' },
+        onboardingRate: null,
+        saveLocation: true,
+        tagFilter: null,
+        swipedExpenseId: null,
+        currencyQuery: '',
+        currencyCandidate: null,
+        ratesTable: null,
+        editMapVisible: false,
+        settingsName: '',
+        settingsTarget: 'EUR',
 
         // Inicialización
         init() {
             this.migrateToSheets();
             this.sheets = JSON.parse(localStorage.getItem('sheets') || '[]');
+            this.migrateTagCategories();
             this.activeSheetId = localStorage.getItem('activeSheetId');
-            this.loadActiveSheetIntoState();
+            if (!this.sheets.find(s => s.id === this.activeSheetId)) {
+                this.activeSheetId = this.sheets.length ? this.sheets[0].id : null;
+            }
+            this.ratesTable = JSON.parse(localStorage.getItem('ratesTable') || 'null');
+
+            if (!this.activeSheetId) {
+                this.startOnboarding(false);
+            } else {
+                this.loadActiveSheetIntoState();
+                this.updateCurrencySymbol('source');
+                this.updateCurrencySymbol('target');
+                this.checkExchangeRate();
+            }
+
             this.resetForm();
+            this.groupExpensesByDay();
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(pos => {
@@ -90,80 +119,230 @@ document.addEventListener('alpine:init', () => {
                 });
             }
 
-            // Ensure currency symbols are correct on init
-            this.updateCurrencySymbol('source');
-            this.updateCurrencySymbol('target');
-
-            this.groupExpensesByDay();
-            
-            // Add click outside handler for tag editor
+            // Cerrar la fila deslizada al tocar fuera
             document.addEventListener('click', (e) => {
-                if (this.showTagEditor !== null) {
-                    // Find the specific tag editor that's open
-                    const clickedInsideTagEditor = e.target.closest('.tag-editor');
-                    const clickedOnTagButton = e.target.closest('.expense-tag');
-
-                    // If we clicked outside both the tag editor and tag buttons, close it
-                    if (!clickedInsideTagEditor && !clickedOnTagButton) {
-                        this.showTagEditor = null;
-                    }
-                }
-
-                if (this.showSheetSelector) {
-                    const clickedInsideSheetSelector = e.target.closest('.sheet-selector');
-
-                    // If we clicked outside the sheet selector entirely, close it
-                    if (!clickedInsideSheetSelector) {
-                        this.showSheetSelector = false;
-                    }
+                if (this.swipedExpenseId && !e.target.closest('.expense-row-wrap')) {
+                    this.swipedExpenseId = null;
                 }
             });
-            
-            if (this.lastRateUpdate) {
-                const lastUpdate = new Date(this.lastRateUpdate);
-                const now = new Date();
-                const daysSinceUpdate = Math.floor((now - lastUpdate) / (1000 * 60 * 60 * 24));
-                
-                if (daysSinceUpdate > 7) {
-                    this.checkExchangeRate();
-                }
-            } else {
-                this.checkExchangeRate();
-            }
-
-            // Set today as expanded by default
-            const today = new Date().toISOString().split('T')[0];
-            this.expandedDays.add(today);
-
-            // Check if we need to update the exchange rate
-            this.checkExchangeRate();
         },
 
-        // Métodos
-        updateConversion() {
-            const amount = parseFloat(this.newExpense.amount) || 0;
-            const rate = this.editingExpenseId ? this.newExpense.exchangeRate : this.exchangeRate;
-            this.convertedAmount = (amount * rate).toFixed(2);
+        // ------------------------------------------------------------
+        // Utilidades numéricas y de formato (es-ES)
+        // ------------------------------------------------------------
+        parseAmount(value) {
+            const s = String(value ?? '').trim();
+            if (!s) return 0;
+            if (s.includes(',')) {
+                return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+            }
+            return parseFloat(s) || 0;
+        },
+
+        formatNumber(n, decimals = 2) {
+            return (n || 0).toLocaleString('es-ES', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        },
+
+        formatCurrencyAmount(amount, symbol, decimals = 2) {
+            const formatted = this.formatNumber(amount, decimals);
+            const isRTL = ['د.م.', 'د.إ', 'ر.ق'].includes(symbol);
+            const isGBP = symbol === '£';
+
+            if (isRTL) {
+                return `${formatted} <span class="rtl-text">${symbol}</span>`;
+            } else if (isGBP) {
+                return `${symbol}${formatted}`;
+            } else {
+                return `${formatted} ${symbol}`;
+            }
+        },
+
+        formatTargetAmount(amount) {
+            return this.formatCurrencyAmount(amount, this.currencies.target.symbol, 2);
+        },
+
+        formatSourceAmount(amount, symbol) {
+            const sym = symbol || this.currencies.source.symbol;
+            const decimals = Math.abs(amount % 1) > 0.000001 ? 2 : 0;
+            return this.formatCurrencyAmount(amount, sym, decimals);
+        },
+
+        formatCurrencyBreakdown(totalsByCurrency) {
+            return Object.values(totalsByCurrency)
+                .map(({ symbol, total }) => this.formatSourceAmount(total, symbol))
+                .join(' + ');
+        },
+
+        escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        },
+
+        rateLabelFor(rate, sourceSymbol, targetSymbol) {
+            // rate: 1 unidad origen → destino. Se muestra invertido: "1 € = 162,40 ¥"
+            if (!rate) return '';
+            return `1 ${targetSymbol} = ${this.formatNumber(1 / rate, 2)} ${sourceSymbol}`;
+        },
+
+        get rateLabel() {
+            return this.rateLabelFor(this.exchangeRate, this.currencies.source.symbol, this.currencies.target.symbol);
+        },
+
+        formatTime(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        },
+
+        formatDayLabel(dateKey) {
+            const date = new Date(dateKey + 'T12:00:00');
+            const today = new Date();
+            const yesterday = new Date(Date.now() - 86400000);
+            const options = { day: 'numeric', month: 'long' };
+            if (date.getFullYear() !== today.getFullYear()) options.year = 'numeric';
+            const label = date.toLocaleDateString('es-ES', options);
+
+            if (date.toDateString() === today.toDateString()) return 'Hoy · ' + label;
+            if (date.toDateString() === yesterday.toDateString()) return 'Ayer · ' + label;
+            return label;
+        },
+
+        tagName(emoji) {
+            return this.tagCategories.find(c => c.emoji === emoji)?.name || '';
+        },
+
+        expenseTitle(expense) {
+            return expense.note || this.tagName(expense.tag) || 'Gasto';
+        },
+
+        expenseMeta(expense) {
+            const parts = [];
+            if (expense.units > 1) {
+                parts.push(`${expense.units} × ${this.formatSourceAmount(expense.amount, expense.currency.symbol).replace(/<[^>]*>/g, '')}`);
+            }
+            parts.push(this.formatTime(expense.date));
+            return parts.join(' · ');
+        },
+
+        // ------------------------------------------------------------
+        // Teclado numérico (pestaña Añadir)
+        // ------------------------------------------------------------
+        keypadDigit(digit) {
+            let amount = String(this.newExpense.amount);
+            const [intPart, fracPart] = amount.split(',');
+            if (fracPart !== undefined && fracPart.length >= 2) return;
+            if (fracPart === undefined && intPart.length >= 9) return;
+            if (amount === '0') amount = '';
+            this.newExpense.amount = amount + digit;
+        },
+
+        keypadComma() {
+            const amount = String(this.newExpense.amount);
+            if (!amount) {
+                this.newExpense.amount = '0,';
+            } else if (!amount.includes(',')) {
+                this.newExpense.amount = amount + ',';
+            }
+        },
+
+        keypadBackspace() {
+            this.newExpense.amount = String(this.newExpense.amount).slice(0, -1);
+        },
+
+        get amountValue() {
+            return this.parseAmount(this.newExpense.amount);
+        },
+
+        get amountDisplay() {
+            const amount = String(this.newExpense.amount);
+            if (!amount) return '0';
+            const [intPart, fracPart] = amount.split(',');
+            const grouped = (parseInt(intPart || '0', 10)).toLocaleString('es-ES');
+            return fracPart !== undefined ? `${grouped},${fracPart}` : grouped;
+        },
+
+        get convertedValue() {
+            return this.amountValue * this.newExpense.units * this.exchangeRate;
         },
 
         incrementUnits() {
             this.newExpense.units++;
-            this.updateConversion();
         },
 
         decrementUnits() {
             if (this.newExpense.units > 1) {
                 this.newExpense.units--;
-                this.updateConversion();
             }
         },
 
-        saveExchangeRate() {
-            this.saveActiveSheet();
+        toggleSaveLocation() {
+            this.saveLocation = !this.saveLocation;
+            if (this.saveLocation && !this.currentLocation && navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    this.currentLocation = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude
+                    };
+                    this.newExpense.coords = { ...this.currentLocation };
+                });
+            }
         },
 
+        get quickTags() {
+            const base = this.tagCategories.slice(0, 5);
+            const selected = this.newExpense.tag;
+            if (selected && !base.some(c => c.emoji === selected)) {
+                const extra = this.tagCategories.find(c => c.emoji === selected);
+                if (extra) base[base.length - 1] = extra;
+            }
+            return base;
+        },
+
+        toggleQuickTag(emoji) {
+            this.newExpense.tag = this.newExpense.tag === emoji ? '' : emoji;
+        },
+
+        pickTag(emoji) {
+            this.newExpense.tag = emoji;
+            this.tagPickerOpen = false;
+        },
+
+        // ------------------------------------------------------------
+        // Navegación
+        // ------------------------------------------------------------
+        switchTab(tab) {
+            this.activeTab = tab;
+            this.showDataScreen = false;
+            this.swipedExpenseId = null;
+            if (tab === 'summary') {
+                this.$nextTick(() => {
+                    this.initSummaryMap();
+                    this.renderSummaryMap();
+                });
+            }
+        },
+
+        closeAllSheets() {
+            this.sheetsSheetOpen = false;
+            this.settingsSheetOpen = false;
+            this.currencySheetOpen = false;
+            this.tagPickerOpen = false;
+            if (this.editingExpenseId) this.cancelEdit();
+        },
+
+        openDataScreen() {
+            this.sheetsSheetOpen = false;
+            this.showDataScreen = true;
+        },
+
+        // ------------------------------------------------------------
+        // Gastos: guardar, editar, borrar
+        // ------------------------------------------------------------
         saveExpense() {
-            const amount = parseFloat(this.newExpense.amount);
+            const amount = this.amountValue;
             if (!amount || amount <= 0) return;
 
             const expense = {
@@ -172,9 +351,9 @@ document.addEventListener('alpine:init', () => {
                 units: this.newExpense.units,
                 currency: { code: this.currencies.source.code, symbol: this.currencies.source.symbol },
                 exchangeRate: this.exchangeRate,
-                date: new Date(),
-                location: this.newExpense.location,
-                coords: this.newExpense.coords ? { ...this.newExpense.coords } : null,
+                date: new Date().toISOString(),
+                location: '',
+                coords: this.saveLocation && this.newExpense.coords ? { ...this.newExpense.coords } : null,
                 showMap: false,
                 tag: this.newExpense.tag || '',
                 note: (this.newExpense.note || '').slice(0, 24)
@@ -184,7 +363,6 @@ document.addEventListener('alpine:init', () => {
             this.saveActiveSheet();
             this.resetForm();
             this.groupExpensesByDay();
-            this.showCurrencyEditor = false; // Close currency editor if open
         },
 
         resetForm() {
@@ -199,85 +377,76 @@ document.addEventListener('alpine:init', () => {
                 currency: { ...this.currencies.source },
                 exchangeRate: this.exchangeRate
             };
-            this.showNewExpenseTagEditor = false;
-            this.convertedAmount = '0.00';
-        },
-
-        toggleTagEditor(id) {
-            this.showTagEditor = this.showTagEditor === id ? null : id;
-        },
-
-        saveTag(id, category) {
-            const index = this.expenses.findIndex(e => e.id === id);
-            if (index !== -1) {
-                this.expenses[index].tag = category.emoji;
-                this.saveActiveSheet();
-                this.showTagEditor = null;
-                this.groupExpensesByDay();
-            }
         },
 
         editExpense(id) {
             const expense = this.expenses.find(e => e.id === id);
-            if (expense) {
-                const date = new Date(expense.date);
-                this.editingExpenseId = id;
-                this.newExpense = {
-                    amount: expense.amount,
-                    units: expense.units,
-                    date: expense.date,
-                    location: expense.location,
-                    coords: expense.coords,
-                    dateInput: date.toISOString().split('T')[0],
-                    timeInput: date.toTimeString().slice(0, 5),
-                    note: expense.note || '',
-                    currency: { ...expense.currency },
-                    exchangeRate: expense.exchangeRate
-                };
-                this.updateConversion();
+            if (!expense) return;
 
-                // Scroll to form and add flash effect
-                setTimeout(() => {
-                    const form = document.querySelector('.expense-item.editing');
-                    if (form) {
-                        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        form.classList.add('highlight-flash');
-                        setTimeout(() => form.classList.remove('highlight-flash'), 1000);
-                    }
+            const date = new Date(expense.date);
+            this.editingExpenseId = id;
+            this.editMapVisible = false;
+            this.swipedExpenseId = null;
+            this.newExpense = {
+                amount: String(expense.amount).replace('.', ','),
+                units: expense.units,
+                date: expense.date,
+                location: expense.location,
+                coords: expense.coords ? { ...expense.coords } : null,
+                dateInput: date.toISOString().split('T')[0],
+                timeInput: date.toTimeString().slice(0, 5),
+                tag: expense.tag || '',
+                note: expense.note || '',
+                currency: { ...expense.currency },
+                exchangeRate: expense.exchangeRate
+            };
+        },
 
-                    // Initialize map (own key/container, separate from showExpenseLocation's
-                    // per-expense view map, so the two don't fight over the same Leaflet instance)
-                    const mapKey = 'edit-' + id;
-                    if (!this.maps[mapKey]) {
-                        const container = document.getElementById('edit-map-' + id);
-                        if (container) {
-                            this.maps[mapKey] = L.map(container);
-                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                attribution: '© OpenStreetMap contributors'
-                            }).addTo(this.maps[mapKey]);
-                        }
-                    }
+        get editConvertedUnit() {
+            return this.parseAmount(this.newExpense.amount) * (this.newExpense.exchangeRate || 0);
+        },
 
-                    // Update map with expense location
-                    if (this.newExpense.coords && this.maps[mapKey]) {
-                        if (this.marker) {
-                            this.marker.setLatLng(this.newExpense.coords);
-                        } else {
-                            this.marker = L.marker(this.newExpense.coords).addTo(this.maps[mapKey]);
-                        }
-                        this.maps[mapKey].setView(this.newExpense.coords, 15);
-                    }
-                }, 0);
+        get editConvertedTotal() {
+            return this.editConvertedUnit * this.newExpense.units;
+        },
+
+        toggleEditMap() {
+            this.editMapVisible = !this.editMapVisible;
+            if (this.editMapVisible) {
+                this.$nextTick(() => this.initEditMap());
+            } else {
+                this.cleanupEditMap();
             }
         },
 
+        initEditMap() {
+            if (!this.newExpense.coords) return;
+
+            if (!this.maps.editSheet) {
+                const container = document.getElementById('edit-sheet-map');
+                if (!container) return;
+                this.maps.editSheet = L.map(container);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(this.maps.editSheet);
+            }
+
+            this.maps.editSheet.invalidateSize();
+            if (this.marker) {
+                this.marker.setLatLng(this.newExpense.coords);
+            } else {
+                this.marker = L.marker(this.newExpense.coords).addTo(this.maps.editSheet);
+            }
+            this.maps.editSheet.setView(this.newExpense.coords, 15);
+        },
+
         cleanupEditMap() {
-            const mapKey = 'edit-' + this.editingExpenseId;
-            if (this.maps[mapKey]) {
-                this.maps[mapKey].remove();
-                delete this.maps[mapKey];
+            if (this.maps.editSheet) {
+                this.maps.editSheet.remove();
+                delete this.maps.editSheet;
             }
             this.marker = null;
+            this.editMapVisible = false;
         },
 
         updateLocation() {
@@ -288,10 +457,9 @@ document.addEventListener('alpine:init', () => {
                         lng: pos.coords.longitude
                     };
 
-                    const mapKey = 'edit-' + this.editingExpenseId;
-                    if (this.maps[mapKey] && this.marker) {
+                    if (this.maps.editSheet && this.marker) {
                         this.marker.setLatLng(this.newExpense.coords);
-                        this.maps[mapKey].setView(this.newExpense.coords, 15);
+                        this.maps.editSheet.setView(this.newExpense.coords, 15);
                     }
                 });
             }
@@ -300,16 +468,16 @@ document.addEventListener('alpine:init', () => {
         updateExpense() {
             const index = this.expenses.findIndex(e => e.id === this.editingExpenseId);
             if (index !== -1) {
-                // Create date from inputs
                 const dateTime = new Date(this.newExpense.dateInput + 'T' + this.newExpense.timeInput);
 
                 this.expenses[index] = {
                     ...this.expenses[index],
-                    amount: parseFloat(this.newExpense.amount),
+                    amount: this.parseAmount(this.newExpense.amount),
                     units: this.newExpense.units,
                     date: dateTime.toISOString(),
                     location: this.newExpense.location,
                     coords: this.newExpense.coords,
+                    tag: this.newExpense.tag || '',
                     note: (this.newExpense.note || '').slice(0, 24)
                 };
 
@@ -330,58 +498,56 @@ document.addEventListener('alpine:init', () => {
         deleteExpense(id) {
             if (confirm('¿Seguro que quieres eliminar este gasto?')) {
                 this.expenses = this.expenses.filter(e => e.id !== id);
+                if (this.editingExpenseId === id) this.cancelEdit();
+                this.swipedExpenseId = null;
                 this.saveActiveSheet();
                 this.groupExpensesByDay();
             }
         },
 
-        showExpenseLocation(expense) {
-            if (!expense.coords) return;
+        // Deslizar filas (editar / borrar)
+        rowTouchStart(event, id) {
+            this._touchX = event.touches[0].clientX;
+            this._touchY = event.touches[0].clientY;
+        },
 
-            // Toggle map visibility
-            expense.showMap = !expense.showMap;
-
-            if (expense.showMap) {
-                // Initialize map after a short delay to ensure the container is visible
-                setTimeout(() => {
-                    const mapId = 'map-' + expense.id;
-
-                    // Clean up existing map if it exists
-                    if (this.maps[expense.id]) {
-                        this.maps[expense.id].remove();
-                        delete this.maps[expense.id];
-                    }
-
-                    // Create new map
-                    this.maps[expense.id] = L.map(mapId);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors'
-                    }).addTo(this.maps[expense.id]);
-
-                    L.marker(expense.coords).addTo(this.maps[expense.id]);
-                    this.maps[expense.id].setView(expense.coords, 15);
-                }, 100);
-            } else {
-                // Clean up map when hiding
-                if (this.maps[expense.id]) {
-                    this.maps[expense.id].remove();
-                    delete this.maps[expense.id];
-                }
+        rowTouchMove(event, id) {
+            const dx = event.touches[0].clientX - this._touchX;
+            const dy = event.touches[0].clientY - this._touchY;
+            if (Math.abs(dx) < 20 || Math.abs(dx) < Math.abs(dy)) return;
+            if (dx < 0) {
+                this.swipedExpenseId = id;
+            } else if (this.swipedExpenseId === id) {
+                this.swipedExpenseId = null;
             }
         },
 
+        rowClick(id) {
+            if (this.swipedExpenseId) {
+                this.swipedExpenseId = null;
+                return;
+            }
+            this.editExpense(id);
+        },
+
+        // ------------------------------------------------------------
+        // Mapas
+        // ------------------------------------------------------------
         cleanupMaps() {
             Object.values(this.maps).forEach(map => map.remove());
             this.maps = {};
             this.summaryMarkerCluster = null;
             this.marker = null;
+            this.editMapVisible = false;
         },
 
         initSummaryMap() {
-            // Never re-created once set — no .remove() here on purpose, unlike showExpenseLocation()
             if (this.maps.summary) return;
 
-            this.maps.summary = L.map('summary-map');
+            const container = document.getElementById('summary-map');
+            if (!container) return;
+
+            this.maps.summary = L.map(container);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(this.maps.summary);
@@ -398,10 +564,7 @@ document.addEventListener('alpine:init', () => {
         renderSummaryMap() {
             if (!this.maps.summary) return;
 
-            // x-show on the section may still be mid-flush (e.g. just went from 0 to
-            // 1 located expense) — wait for Alpine's DOM update so the container is
-            // actually visible before Leaflet measures it, otherwise invalidateSize()
-            // below re-caches a stale 0x0 size.
+            // Esperar al flush de Alpine para que el contenedor tenga tamaño real
             this.$nextTick(() => {
                 this.maps.summary.invalidateSize();
 
@@ -409,7 +572,7 @@ document.addEventListener('alpine:init', () => {
 
                 const located = this.expenses.filter(e => e.coords);
                 located.forEach(expense => {
-                    const amountLabel = this.formatCurrencyAmount(
+                    const amountLabel = this.formatSourceAmount(
                         expense.amount * expense.units,
                         this.escapeHtml(expense.currency.symbol)
                     );
@@ -432,24 +595,137 @@ document.addEventListener('alpine:init', () => {
             });
         },
 
-        toggleDayExpansion(dateKey) {
-            if (this.expandedDays.has(dateKey)) {
-                this.expandedDays.delete(dateKey);
-            } else {
-                this.expandedDays.add(dateKey);
-            }
+        get locatedCount() {
+            return this.expenses.filter(e => e.coords).length;
         },
 
-        isDayExpanded(dateKey) {
-            return this.expandedDays.has(dateKey);
-        },
-
-        // Métodos para gestión de monedas
+        // ------------------------------------------------------------
+        // Monedas
+        // ------------------------------------------------------------
         updateCurrencySymbol(type) {
             const currency = this.supportedCurrencies[this.currencies[type].code];
             if (currency) {
                 this.currencies[type].symbol = currency.symbol;
             }
+        },
+
+        openCurrencySheet() {
+            this.currencyCandidate = this.currencies.source.code;
+            this.currencyQuery = '';
+            this.currencySheetOpen = true;
+            this.fetchRatesTable();
+        },
+
+        async fetchRatesTable() {
+            const base = this.currencies.target.code;
+            const today = new Date().toISOString().split('T')[0];
+
+            if (this.ratesTable && this.ratesTable.base === base && this.ratesTable.date === today) return;
+
+            try {
+                const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${base}`);
+                const data = await response.json();
+                if (data.rates) {
+                    this.ratesTable = { base, date: today, rates: data.rates };
+                    localStorage.setItem('ratesTable', JSON.stringify(this.ratesTable));
+                }
+            } catch (error) {
+                console.error('Error fetching rates table:', error);
+                if (this.ratesTable && this.ratesTable.base !== base) this.ratesTable = null;
+            }
+        },
+
+        currencySubtitle(code) {
+            const rate = this.ratesTable?.base === this.currencies.target.code
+                ? this.ratesTable?.rates?.[code]
+                : null;
+            if (!rate) return '';
+            const symbol = this.supportedCurrencies[code]?.symbol || code;
+            return `1 ${this.currencies.target.symbol} = ${this.formatNumber(rate, 2)} ${symbol}`;
+        },
+
+        get filteredCurrencies() {
+            const query = this.currencyQuery.trim().toLowerCase();
+            return Object.values(this.supportedCurrencies).filter(c =>
+                !query || c.name.toLowerCase().includes(query) || c.code.toLowerCase().includes(query)
+            );
+        },
+
+        get currencyCtaLabel() {
+            const candidate = this.supportedCurrencies[this.currencyCandidate];
+            if (!candidate) return 'Cerrar';
+            if (this.currencyCandidate === this.currencies.source.code) {
+                return `Seguir en ${candidate.name.toLowerCase()}`;
+            }
+            return `Cambiar a ${candidate.code}`;
+        },
+
+        applyCurrencyChange() {
+            if (this.currencyCandidate && this.currencyCandidate !== this.currencies.source.code) {
+                this.currencies.source.code = this.currencyCandidate;
+                this.updateCurrencySymbol('source');
+
+                // Si tenemos la tabla de cambios de hoy, sembrar el tipo al instante
+                const tableRate = this.ratesTable?.base === this.currencies.target.code
+                    ? this.ratesTable?.rates?.[this.currencyCandidate]
+                    : null;
+                if (tableRate) {
+                    this.exchangeRate = 1 / tableRate;
+                    this.lastRateUpdate = new Date().toISOString().split('T')[0];
+                    this.saveActiveSheet();
+                } else {
+                    this.saveActiveSheet();
+                    this.updateExchangeRate();
+                }
+                this.newExpense.currency = { ...this.currencies.source };
+            }
+            this.currencySheetOpen = false;
+        },
+
+        async checkExchangeRate() {
+            const today = new Date().toISOString().split('T')[0];
+            if (!this.lastRateUpdate || this.lastRateUpdate !== today) {
+                await this.updateExchangeRate();
+            }
+        },
+
+        async updateExchangeRate() {
+            try {
+                const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${this.currencies.source.code}`);
+                const data = await response.json();
+
+                if (data.rates && data.rates[this.currencies.target.code]) {
+                    this.exchangeRate = data.rates[this.currencies.target.code];
+                    this.lastRateUpdate = new Date().toISOString().split('T')[0];
+                    this.saveActiveSheet();
+                }
+            } catch (error) {
+                console.error('Error updating exchange rate:', error);
+            }
+        },
+
+        // ------------------------------------------------------------
+        // Hojas
+        // ------------------------------------------------------------
+        get activeSheet() {
+            return this.sheets.find(s => s.id === this.activeSheetId) || null;
+        },
+
+        get activeSheetName() {
+            return this.activeSheet?.name || '';
+        },
+
+        sheetTotal(sheet) {
+            return sheet.expenses.reduce((sum, e) => sum + e.amount * e.units * e.exchangeRate, 0);
+        },
+
+        sheetMeta(sheet) {
+            const count = sheet.expenses.length;
+            return `${sheet.currencies.source.code} → ${sheet.currencies.target.code} · ${count} ${count === 1 ? 'gasto' : 'gastos'}`;
+        },
+
+        sheetTargetSymbol(sheet) {
+            return sheet.currencies.target.symbol;
         },
 
         backfillExpenseCurrency(expenses, fallbackCurrency) {
@@ -478,10 +754,28 @@ document.addEventListener('alpine:init', () => {
             return currencyPart ? `${label} ${currencyPart}` : label;
         },
 
+        // Remapear etiquetas de categorías retiradas a las unificadas
+        // (Bebidas→Comida, Ropa/Farmacia→Compras, y cambios de icono)
+        migrateTagCategories() {
+            const map = { '🍺': '🍽️', '🍭': '🍦', '👕': '🛍️', '💊': '🛍️', '🏛️': '🎟️', '🛶': '🎢' };
+            let changed = false;
+            this.sheets.forEach(sheet => {
+                sheet.expenses.forEach(expense => {
+                    if (expense.tag && map[expense.tag]) {
+                        expense.tag = map[expense.tag];
+                        changed = true;
+                    }
+                });
+            });
+            if (changed) localStorage.setItem('sheets', JSON.stringify(this.sheets));
+        },
+
         migrateToSheets() {
             if (localStorage.getItem('sheets')) return;
 
             const legacyExpenses = JSON.parse(localStorage.getItem('expenses') || 'null');
+            const hasLegacyData = legacyExpenses !== null || localStorage.getItem('sourceCurrency') !== null;
+            if (!hasLegacyData) return; // instalación nueva → onboarding
 
             const sheet = {
                 id: Date.now().toString(),
@@ -540,27 +834,6 @@ document.addEventListener('alpine:init', () => {
             localStorage.setItem('sheets', JSON.stringify(this.sheets));
         },
 
-        addSheet() {
-            const id = Date.now().toString();
-            const sheet = {
-                id,
-                name: '',
-                isCustomName: false,
-                createdAt: new Date().toISOString(),
-                expenses: [],
-                currencies: {
-                    source: { code: 'THB', symbol: '฿' },
-                    target: { ...this.currencies.target }
-                },
-                exchangeRate: 0,
-                lastRateUpdate: null
-            };
-            sheet.name = this.computeSheetName(sheet);
-            this.sheets.push(sheet);
-            localStorage.setItem('sheets', JSON.stringify(this.sheets));
-            this.selectSheet(id);
-        },
-
         selectSheet(id) {
             if (!this.sheets.find(s => s.id === id)) return;
 
@@ -572,16 +845,14 @@ document.addEventListener('alpine:init', () => {
             this.loadActiveSheetIntoState();
 
             this.resetForm();
-            const today = new Date().toISOString().split('T')[0];
-            this.expandedDays = new Set([today]);
-            this.showSheetSelector = false;
-            this.sheetRenameInput = '';
+            this.tagFilter = null;
+            this.swipedExpenseId = null;
+            this.sheetsSheetOpen = false;
 
-            // cleanupMaps() above wiped this.maps.summary along with the per-expense
-            // maps; initSummaryMap() only (re)creates it when missing, so it must be
-            // called again here or the summary map stays blank for the rest of the
-            // session (see initSummaryMap's own guard comment).
-            this.initSummaryMap();
+            // cleanupMaps() borró el mapa del resumen: recrearlo si esa pestaña está a la vista
+            if (this.activeTab === 'summary') {
+                this.$nextTick(() => this.initSummaryMap());
+            }
 
             this.groupExpensesByDay();
             this.checkExchangeRate();
@@ -610,101 +881,114 @@ document.addEventListener('alpine:init', () => {
             localStorage.setItem('sheets', JSON.stringify(this.sheets));
 
             if (this.activeSheetId === id) {
+                this.showDataScreen = false;
                 if (this.sheets.length === 0) {
-                    this.addSheet();
+                    this.activeSheetId = null;
+                    localStorage.removeItem('activeSheetId');
+                    this.expenses = [];
+                    this.groupedExpenses = [];
+                    this.startOnboarding(false);
                 } else {
                     this.selectSheet(this.sheets[0].id);
                 }
             }
         },
 
-        saveCurrencies() {
-            // Update symbols before saving
-            this.updateCurrencySymbol('source');
-            this.updateCurrencySymbol('target');
-
-            this.saveActiveSheet();
-            this.showCurrencyEditor = false;
-
-            // Update exchange rate with new currencies
-            this.updateExchangeRate();
+        // Ajustes de la hoja activa
+        openSettingsSheet() {
+            this.settingsName = this.activeSheetName;
+            this.settingsTarget = this.currencies.target.code;
+            this.sheetsSheetOpen = false;
+            this.settingsSheetOpen = true;
         },
-        // Formateadores y utilidades
-        formatCurrencyAmount(amount, symbol) {
-            const formattedAmount = amount.toFixed(2);
-            const isRTL = ['د.م.', 'د.إ', 'ر.ق'].includes(symbol);
-            const isGBP = symbol === '£';
 
-            if (isRTL) {
-                return `${formattedAmount} <span class="rtl-text">${symbol}</span>`;
-            } else if (isGBP) {
-                return `${symbol}${formattedAmount}`;
-            } else {
-                return `${formattedAmount} ${symbol}`;
+        saveSettings() {
+            this.renameSheet(this.activeSheetId, this.settingsName);
+
+            if (this.expenses.length === 0 && this.settingsTarget !== this.currencies.target.code) {
+                this.currencies.target.code = this.settingsTarget;
+                this.updateCurrencySymbol('target');
+                this.saveActiveSheet();
+                this.updateExchangeRate();
+            }
+            this.settingsSheetOpen = false;
+        },
+
+        // ------------------------------------------------------------
+        // Onboarding — crear hoja
+        // ------------------------------------------------------------
+        startOnboarding(cancelable) {
+            this.onboardingCancelable = cancelable;
+            this.onboardingForm = {
+                name: '',
+                source: 'THB',
+                target: this.currencies?.target?.code || 'EUR'
+            };
+            this.onboardingRate = null;
+            this.sheetsSheetOpen = false;
+            this.onboardingActive = true;
+            this.fetchOnboardingRate();
+        },
+
+        async fetchOnboardingRate() {
+            const { source, target } = this.onboardingForm;
+            this.onboardingRate = null;
+            try {
+                const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${source}`);
+                const data = await response.json();
+                // Ignorar la respuesta si el usuario ya cambió de moneda
+                if (this.onboardingForm.source === source && data.rates?.[this.onboardingForm.target]) {
+                    this.onboardingRate = data.rates[this.onboardingForm.target];
+                }
+            } catch (error) {
+                console.error('Error fetching onboarding rate:', error);
             }
         },
 
-        escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+        get onboardingRateLabel() {
+            const source = this.supportedCurrencies[this.onboardingForm.source];
+            const target = this.supportedCurrencies[this.onboardingForm.target];
+            if (!this.onboardingRate || !source || !target) return '';
+            return this.rateLabelFor(this.onboardingRate, source.symbol, target.symbol);
         },
 
-        formatSourceAmount(amount) {
-            return this.formatCurrencyAmount(amount, this.currencies.source.symbol);
+        createSheetFromOnboarding() {
+            const { name, source, target } = this.onboardingForm;
+            const sourceCurrency = this.supportedCurrencies[source];
+            const targetCurrency = this.supportedCurrencies[target];
+            if (!sourceCurrency || !targetCurrency) return;
+
+            const sheet = {
+                id: Date.now().toString(),
+                name: name.trim(),
+                isCustomName: !!name.trim(),
+                createdAt: new Date().toISOString(),
+                expenses: [],
+                currencies: {
+                    source: { code: sourceCurrency.code, symbol: sourceCurrency.symbol },
+                    target: { code: targetCurrency.code, symbol: targetCurrency.symbol }
+                },
+                exchangeRate: this.onboardingRate || 0,
+                lastRateUpdate: this.onboardingRate ? new Date().toISOString().split('T')[0] : null
+            };
+            if (!sheet.name) sheet.name = this.computeSheetName(sheet);
+
+            this.sheets.push(sheet);
+            localStorage.setItem('sheets', JSON.stringify(this.sheets));
+
+            this.onboardingActive = false;
+            this.selectSheet(sheet.id);
+            this.activeTab = 'add';
         },
 
-        formatTargetAmount(amount) {
-            return this.formatCurrencyAmount(amount, this.currencies.target.symbol);
-        },
-
-        formatCurrencyBreakdown(totalsByCurrency) {
-            return Object.values(totalsByCurrency)
-                .map(({ symbol, total }) => this.formatCurrencyAmount(total, symbol))
-                .join(' + ');
-        },
-
-        formatThb(amount) {
-            return amount.toLocaleString('th-TH');
-        },
-
-        formatEur(amount) {
-            return amount.toFixed(2);
-        },
-
-        formatTime(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        },
-
-        formatDate(dateStr) {
-            const date = new Date(dateStr);
-            const today = new Date();
-
-            if (date.toDateString() === today.toDateString()) {
-                return 'HOY';
-            } else if (date.toDateString() === new Date(today - 86400000).toDateString()) {
-                return 'AYER';
-            } else {
-                return date.toLocaleDateString();
-            }
-        },
-
-        formatExchangeRate(rate) {
-            // For very low rates (< 0.01), show more decimals
-            if (rate < 0.01) return rate.toFixed(6);
-            if (rate < 0.1) return rate.toFixed(5);
-            return rate.toFixed(4);
-        },
-
-        // Agrupación de gastos por día
+        // ------------------------------------------------------------
+        // Agrupación y analítica
+        // ------------------------------------------------------------
         groupedExpenses: [],
 
         groupExpensesByDay() {
-            // Ordenar gastos por fecha
             const sortedExpenses = [...this.expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            // Agrupar por día
             const groups = {};
             sortedExpenses.forEach(expense => {
                 const date = new Date(expense.date);
@@ -712,7 +996,7 @@ document.addEventListener('alpine:init', () => {
 
                 if (!groups[dateKey]) {
                     groups[dateKey] = {
-                        date: this.formatDate(expense.date),
+                        date: this.formatDayLabel(dateKey),
                         dateKey: dateKey,
                         expenses: [],
                         totalsByCurrency: {},
@@ -731,10 +1015,31 @@ document.addEventListener('alpine:init', () => {
                 groups[dateKey].totalTarget += total * expense.exchangeRate;
             });
 
-            // Convertir a array y ordenar
             this.groupedExpenses = Object.values(groups);
 
             this.renderSummaryMap();
+        },
+
+        get tagChips() {
+            const counts = {};
+            this.expenses.forEach(e => {
+                const tag = e.tag || '🏷️';
+                counts[tag] = (counts[tag] || 0) + 1;
+            });
+            return Object.entries(counts)
+                .map(([emoji, count]) => ({ emoji, count }))
+                .sort((a, b) => b.count - a.count);
+        },
+
+        get visibleGroups() {
+            if (!this.tagFilter) return this.groupedExpenses;
+            return this.groupedExpenses
+                .map(group => {
+                    const expenses = group.expenses.filter(e => (e.tag || '🏷️') === this.tagFilter);
+                    const totalTarget = expenses.reduce((sum, e) => sum + e.amount * e.units * e.exchangeRate, 0);
+                    return { ...group, expenses, totalTarget };
+                })
+                .filter(group => group.expenses.length > 0);
         },
 
         calculateAnalytics() {
@@ -761,7 +1066,7 @@ document.addEventListener('alpine:init', () => {
                         totalsByCurrency: {},
                         totalTarget: 0,
                         count: 0,
-                        name: this.tagCategories.find(c => c.emoji === tag)?.name || 'Sin etiqueta'
+                        name: this.tagCategories.find(c => c.emoji === tag)?.name || 'Otros'
                     };
                 }
                 if (!analytics.byTag[tag].totalsByCurrency[code]) {
@@ -772,7 +1077,6 @@ document.addEventListener('alpine:init', () => {
                 analytics.byTag[tag].count++;
             });
 
-            // Convert to array and sort by target amount
             analytics.tagsSorted = Object.entries(analytics.byTag)
                 .map(([emoji, data]) => ({
                     emoji,
@@ -787,44 +1091,48 @@ document.addEventListener('alpine:init', () => {
             return this.calculateAnalytics();
         },
 
-        resetData() {
-            if (confirm('¿Estás seguro de que quieres borrar todos los gastos? Esta acción no se puede deshacer.')) {
-                this.expenses = [];
-                this.saveActiveSheet();
-                this.groupExpensesByDay();
+        get summaryMeta() {
+            const stats = this.summaryStats;
+            if (!stats.count) return 'Todavía no hay gastos en esta hoja';
+            const parts = [stats.breakdown];
+            if (stats.days) {
+                parts.push(`${this.formatTargetAmount(stats.perDay)} al día`);
+                parts.push(`${stats.days} ${stats.days === 1 ? 'día' : 'días'}`);
             }
+            return parts.join(' · ');
         },
 
-        async checkExchangeRate() {
-            const today = new Date().toISOString().split('T')[0];
-
-            // Update if we don't have a rate or if it's from a previous day
-            if (!this.lastRateUpdate || this.lastRateUpdate !== today) {
-                await this.updateExchangeRate();
-            }
+        get summaryStats() {
+            const analytics = this.analytics;
+            const days = this.groupedExpenses.length;
+            return {
+                total: analytics.totalTarget,
+                count: this.expenses.length,
+                days: days,
+                perDay: days ? analytics.totalTarget / days : 0,
+                breakdown: this.formatCurrencyBreakdown(analytics.totalsByCurrency)
+            };
         },
 
-        async updateExchangeRate() {
-            try {
-                const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${this.currencies.source.code}`);
-                const data = await response.json();
-
-                if (data.rates && data.rates[this.currencies.target.code]) {
-                    this.exchangeRate = data.rates[this.currencies.target.code];
-                    this.lastRateUpdate = new Date().toISOString().split('T')[0];
-
-                    // Save to localStorage
-                    this.saveActiveSheet();
-
-                    // Show success message
-                    alert(`Tipo de cambio actualizado: 1 ${this.currencies.source.code} = ${this.exchangeRate} ${this.currencies.target.code}`);
-                }
-            } catch (error) {
-                console.error('Error updating exchange rate:', error);
-                alert('No se pudo actualizar el tipo de cambio. Por favor, inténtalo más tarde.');
-            }
+        tagBarColor(index) {
+            const palette = [
+                'var(--sq-green-500)',
+                'var(--sq-black)',
+                'var(--sq-gray-400)',
+                'var(--sq-gray-300)',
+                'var(--sq-gray-200)'
+            ];
+            return index < palette.length ? palette[index] : 'var(--sq-gray-200)';
         },
 
+        tagPercent(tag) {
+            const total = this.analytics.totalTarget;
+            return total ? (tag.totalTarget / total) * 100 : 0;
+        },
+
+        // ------------------------------------------------------------
+        // Datos: exportar, importar, borrar
+        // ------------------------------------------------------------
         exportDatabase() {
             const activeSheet = this.sheets.find(s => s.id === this.activeSheetId);
             const data = {
@@ -868,25 +1176,21 @@ document.addEventListener('alpine:init', () => {
                     try {
                         const importedData = JSON.parse(event.target.result);
 
-                        // Validate version
                         if (!importedData.version) {
                             alert('El archivo no tiene un formato válido (falta versión).');
                             return;
                         }
 
-                        // Check version compatibility
                         if (importedData.version !== this.DB_VERSION) {
                             if (!confirm(`El archivo es de una versión diferente (${importedData.version} vs ${this.DB_VERSION}). ¿Quieres intentar importarlo de todas formas?`)) {
                                 return;
                             }
                         }
 
-                        // Confirm import
                         if (!confirm('Se añadirá como una hoja nueva, sin tocar las hojas existentes. ¿Continuar?')) {
                             return;
                         }
 
-                        // Build a new sheet from the imported data
                         const data = importedData.data;
                         const expenses = data.expenses || [];
                         const sourceCurrency = {
@@ -894,7 +1198,6 @@ document.addEventListener('alpine:init', () => {
                             symbol: data.sourceCurrencySymbol || '฿'
                         };
 
-                        // Backfill currency on expenses imported from a pre-multicurrency backup
                         this.backfillExpenseCurrency(expenses, sourceCurrency);
 
                         const sheet = {
@@ -918,6 +1221,7 @@ document.addEventListener('alpine:init', () => {
 
                         this.sheets.push(sheet);
                         localStorage.setItem('sheets', JSON.stringify(this.sheets));
+                        this.showDataScreen = false;
                         this.selectSheet(sheet.id);
 
                         alert('Datos importados correctamente como una nueva hoja.');

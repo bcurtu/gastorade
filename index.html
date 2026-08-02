@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
     <meta name="description" content="Conversor de divisas y gestor de gastos para viajes">
     <title>Gastorade</title>
     <link rel="icon" type="image/jpg" href="gastorade.jpg">
@@ -19,6 +19,9 @@
 
         gtag('config', 'G-G0JQ7P64MS');
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -67,293 +70,483 @@
     </script>
 </head>
 <body>
-    <div class="app-container" x-data="expenseCalculator()">
-        <!-- Configuración de tipo de cambio -->
-        <div class="header">
-            <h1><img src="gastorade.jpg" alt="" class="header-icon">Gastorade</h1>
+    <div class="app" x-data="expenseCalculator()">
 
-            <div class="sheet-selector">
-                <button type="button" class="link-button" @click="showSheetSelector = !showSheetSelector">
-                    📑 <span x-text="sheets.find(s => s.id === activeSheetId)?.name"></span> ▾
+        <!-- ============ Primer uso / Nueva hoja ============ -->
+        <section class="screen screen--full onboarding" x-show="onboardingActive" x-cloak>
+            <div class="onboarding__back" x-show="onboardingCancelable">
+                <button type="button" @click="onboardingActive = false" aria-label="Volver">
+                    <span class="ms">arrow_back</span>
                 </button>
+            </div>
+            <div class="onboarding__header">
+                <div class="onboarding__title">¿Dónde vas?</div>
+                <div class="onboarding__subtitle">Cada viaje es una hoja. Puedes tener varias abiertas a la vez.</div>
+            </div>
+            <div class="onboarding__form">
+                <div class="field">
+                    <label class="field__label" for="onboarding-name">Nombre de la hoja</label>
+                    <input id="onboarding-name" type="text" placeholder="Tokio, marzo" x-model="onboardingForm.name">
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label class="field__label" for="onboarding-source">Moneda del sitio</label>
+                        <div class="select-wrap">
+                            <select id="onboarding-source" x-model="onboardingForm.source" @change="fetchOnboardingRate()">
+                                <template x-for="(currency, code) in supportedCurrencies" :key="code">
+                                    <option :value="code" x-text="code + ' ' + currency.symbol"></option>
+                                </template>
+                            </select>
+                            <span class="ms">expand_more</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="field__label" for="onboarding-target">Tu moneda</label>
+                        <div class="select-wrap">
+                            <select id="onboarding-target" x-model="onboardingForm.target" @change="fetchOnboardingRate()">
+                                <template x-for="(currency, code) in supportedCurrencies" :key="code">
+                                    <option :value="code" x-text="code + ' ' + currency.symbol"></option>
+                                </template>
+                            </select>
+                            <span class="ms">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="rate-box">
+                    <span class="ms">sync</span>
+                    <div>
+                        <div class="rate-box__value" x-text="onboardingRateLabel || 'Buscando el cambio…'"></div>
+                        <div class="rate-box__meta" x-text="onboardingRate ? 'Cambio de hoy, actualizado solo' : 'Si no hay conexión, lo buscamos más tarde'"></div>
+                    </div>
+                </div>
+                <div class="info-box info-box--muted">
+                    <span class="ms">lightbulb</span>
+                    <div><b>Consejo:</b> tu moneda queda fija en cuanto guardes el primer gasto. La del sitio la puedes cambiar cuando cruces la frontera.</div>
+                </div>
+            </div>
+            <div class="onboarding__cta">
+                <button type="button" class="btn-primary" @click="createSheetFromOnboarding()">Crear hoja</button>
+            </div>
+        </section>
 
-                <div x-show="showSheetSelector" class="sheet-panel">
-                    <template x-for="sheet in sheets" :key="sheet.id">
-                        <div class="sheet-item" :class="{ active: sheet.id === activeSheetId }">
-                            <span @click="selectSheet(sheet.id)" x-text="sheet.name"></span>
-                            <button type="button" class="icon-button delete" @click="deleteSheet(sheet.id)" title="Borrar hoja">🗑️</button>
+        <div class="main" x-show="!onboardingActive">
+
+            <!-- ============ Añadir ============ -->
+            <section class="screen capture" x-show="activeTab === 'add' && !showDataScreen">
+                <div class="capture__header">
+                    <button type="button" class="sheet-chip" @click="sheetsSheetOpen = true">
+                        <span x-text="activeSheetName"></span>
+                        <span class="ms">expand_more</span>
+                    </button>
+                    <button type="button" class="rate-chip" @click="openCurrencySheet()">
+                        <span class="ms">sync</span>
+                        <span x-text="rateLabel || 'Sin cambio aún'"></span>
+                    </button>
+                </div>
+
+                <div class="capture__amount">
+                    <div class="capture__amount-row">
+                        <div class="capture__amount-value" :class="{ empty: !newExpense.amount }" x-text="amountDisplay"></div>
+                        <div class="capture__amount-symbol" x-text="currencies.source.symbol"></div>
+                    </div>
+                    <div class="capture__converted" x-show="amountValue > 0">
+                        <span class="ms">south</span>
+                        <div class="capture__converted-value" x-html="formatTargetAmount(convertedValue)"></div>
+                    </div>
+                    <div class="capture__units-note" x-show="amountValue > 0 && newExpense.units > 1"
+                         x-text="newExpense.units + ' × ' + amountDisplay + ' ' + currencies.source.symbol"></div>
+                    <div class="capture__hint" x-show="!(amountValue > 0)">Escribe lo que pone el ticket</div>
+                </div>
+
+                <div class="capture__row" :class="{ dimmed: !(amountValue > 0) }">
+                    <div class="stepper" :class="{ active: newExpense.units > 1 }">
+                        <button type="button" @click="decrementUnits()" aria-label="Menos unidades"><span class="ms">remove</span></button>
+                        <div class="stepper__value" x-text="newExpense.units + (newExpense.units === 1 ? ' ud.' : ' uds.')"></div>
+                        <button type="button" @click="incrementUnits()" aria-label="Más unidades"><span class="ms">add</span></button>
+                    </div>
+                    <input class="note-input" type="text" maxlength="24" placeholder="Nota" x-model="newExpense.note">
+                </div>
+
+                <div class="tag-row" :class="{ dimmed: !(amountValue > 0) }">
+                    <template x-for="category in quickTags" :key="category.emoji">
+                        <button type="button" class="tag-circle" :class="{ selected: newExpense.tag === category.emoji }"
+                                @click="toggleQuickTag(category.emoji)" :title="category.name">
+                            <span x-text="category.emoji"></span>
+                        </button>
+                    </template>
+                    <button type="button" class="tag-circle tag-circle--more" @click="tagPickerOpen = true" aria-label="Más etiquetas">
+                        <span class="ms">more_horiz</span>
+                    </button>
+                </div>
+
+                <div class="location-row">
+                    <span class="ms">location_on</span>
+                    <span>Guardar dónde estoy</span>
+                    <button type="button" class="switch" :class="{ on: saveLocation }" @click="toggleSaveLocation()"
+                            role="switch" :aria-checked="saveLocation" aria-label="Guardar dónde estoy">
+                        <span class="switch__knob"></span>
+                    </button>
+                </div>
+
+                <div class="keypad-area">
+                    <div class="keypad">
+                        <button type="button" @click="keypadDigit('1')">1</button>
+                        <button type="button" @click="keypadDigit('2')">2</button>
+                        <button type="button" @click="keypadDigit('3')">3</button>
+                        <button type="button" @click="keypadDigit('4')">4</button>
+                        <button type="button" @click="keypadDigit('5')">5</button>
+                        <button type="button" @click="keypadDigit('6')">6</button>
+                        <button type="button" @click="keypadDigit('7')">7</button>
+                        <button type="button" @click="keypadDigit('8')">8</button>
+                        <button type="button" @click="keypadDigit('9')">9</button>
+                        <button type="button" class="ghost" @click="keypadComma()">,</button>
+                        <button type="button" @click="keypadDigit('0')">0</button>
+                        <button type="button" class="ghost" @click="keypadBackspace()" aria-label="Borrar"><span class="ms">backspace</span></button>
+                    </div>
+                    <div class="keypad-save">
+                        <button type="button" class="btn-primary" :disabled="!(amountValue > 0)" @click="saveExpense()">
+                            <span x-show="!(amountValue > 0)">Guardar gasto</span>
+                            <span x-show="amountValue > 0" x-html="'Guardar ' + formatTargetAmount(convertedValue)"></span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ Gastos ============ -->
+            <section class="screen" x-show="activeTab === 'list' && !showDataScreen">
+                <div class="topbar">
+                    <div class="topbar__title">Gastos</div>
+                    <button type="button" class="sheet-chip" @click="sheetsSheetOpen = true">
+                        <span x-text="activeSheetName"></span>
+                        <span class="ms">expand_more</span>
+                    </button>
+                </div>
+
+                <div class="empty-state" x-show="expenses.length === 0">
+                    <span class="ms">receipt_long</span>
+                    <div class="empty-state__title">Todavía no hay nada</div>
+                    <div class="empty-state__text">Apunta tu primer gasto y lo verás convertido a tu moneda al instante.</div>
+                    <button type="button" class="btn-outline" @click="switchTab('add')">Añadir el primero</button>
+                </div>
+
+                <div x-show="expenses.length > 0">
+                    <div class="list-total">
+                        <div class="list-total__amount" x-html="formatTargetAmount(analytics.totalTarget)"></div>
+                        <div class="list-total__meta" x-text="'en ' + expenses.length + (expenses.length === 1 ? ' gasto' : ' gastos')"></div>
+                    </div>
+
+                    <div class="filter-row">
+                        <button type="button" class="filter-chip" :class="{ active: !tagFilter }" @click="tagFilter = null">Todo</button>
+                        <template x-for="chip in tagChips" :key="chip.emoji">
+                            <button type="button" class="filter-chip" :class="{ active: tagFilter === chip.emoji }"
+                                    @click="tagFilter = tagFilter === chip.emoji ? null : chip.emoji">
+                                <span x-text="chip.emoji"></span>
+                                <span x-text="chip.count"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <template x-for="day in visibleGroups" :key="activeSheetId + '_' + day.dateKey">
+                        <div>
+                            <div class="day-header">
+                                <span class="day-header__label" x-text="day.date"></span>
+                                <span class="day-header__total" x-html="formatTargetAmount(day.totalTarget)"></span>
+                            </div>
+                            <template x-for="expense in day.expenses" :key="expense.id">
+                                <div class="expense-row-wrap">
+                                    <div class="row-actions">
+                                        <button type="button" class="edit" @click="editExpense(expense.id)" aria-label="Editar"><span class="ms">edit</span></button>
+                                        <button type="button" class="delete" @click="deleteExpense(expense.id)" aria-label="Borrar"><span class="ms">delete</span></button>
+                                    </div>
+                                    <div class="expense-row" :class="{ swiped: swipedExpenseId === expense.id }"
+                                         @touchstart="rowTouchStart($event, expense.id)"
+                                         @touchmove="rowTouchMove($event, expense.id)"
+                                         @click="rowClick(expense.id)">
+                                        <div class="expense-row__tag"><span x-text="expense.tag || '🏷️'"></span></div>
+                                        <div class="expense-row__body">
+                                            <div class="expense-row__title" x-text="expenseTitle(expense)"></div>
+                                            <div class="expense-row__meta">
+                                                <span class="ms" x-show="expense.coords">location_on</span>
+                                                <span x-text="expenseMeta(expense)"></span>
+                                            </div>
+                                        </div>
+                                        <div class="expense-row__amounts">
+                                            <div class="expense-row__target" x-html="formatTargetAmount(expense.amount * expense.units * expense.exchangeRate)"></div>
+                                            <div class="expense-row__source" x-html="formatSourceAmount(expense.amount * expense.units, expense.currency.symbol)"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </template>
 
-                    <div class="sheet-rename">
-                        <input
-                            type="text"
-                            placeholder="Renombrar hoja activa"
-                            x-model="sheetRenameInput"
-                            @keydown.enter="renameSheet(activeSheetId, sheetRenameInput); sheetRenameInput = ''"
-                        >
-                    </div>
-
-                    <button type="button" class="secondary-button" @click="addSheet()">+ Añadir hoja</button>
+                    <div class="swipe-hint">Desliza una fila para editarla o borrarla, o tócala para abrirla.</div>
                 </div>
-            </div>
+            </section>
 
-            <div x-show="showCurrencyEditor" class="currency-editor">
-                <div class="currency-input">
-                    <label>Moneda origen:</label>
-                    <select x-model="currencies.source.code" @change="updateCurrencySymbol('source')">
+            <!-- ============ Resumen ============ -->
+            <section class="screen" x-show="activeTab === 'summary' && !showDataScreen">
+                <div class="topbar">
+                    <div class="topbar__title">Resumen</div>
+                    <button type="button" class="sheet-chip" @click="sheetsSheetOpen = true">
+                        <span x-text="activeSheetName"></span>
+                        <span class="ms">expand_more</span>
+                    </button>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-card__label">Llevas gastado</div>
+                    <div class="summary-card__amount" x-html="formatTargetAmount(summaryStats.total)"></div>
+                    <div class="summary-card__meta" x-html="summaryMeta"></div>
+                </div>
+
+                <div class="summary-section" x-show="expenses.length > 0">
+                    <div class="summary-section__title">Por etiqueta</div>
+                    <div class="tag-bar">
+                        <template x-for="(tag, index) in analytics.tagsSorted" :key="tag.emoji">
+                            <div :style="'width:' + tagPercent(tag) + '%; background:' + tagBarColor(index)"></div>
+                        </template>
+                    </div>
+                    <div class="tag-legend">
+                        <template x-for="(tag, index) in analytics.tagsSorted" :key="tag.emoji">
+                            <div class="tag-legend__row">
+                                <span class="tag-legend__dot" :style="'background:' + tagBarColor(index)"></span>
+                                <span class="tag-legend__emoji" x-text="tag.emoji"></span>
+                                <span class="tag-legend__name" x-text="tag.name"></span>
+                                <span class="tag-legend__amount" x-html="formatTargetAmount(tag.totalTarget)"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="summary-section">
+                    <div class="summary-section__header">
+                        <div class="summary-section__title">Dónde has gastado</div>
+                        <div class="summary-section__meta" x-show="locatedCount > 0"
+                             x-text="locatedCount + (locatedCount === 1 ? ' gasto con ubicación' : ' gastos con ubicación')"></div>
+                    </div>
+                    <div class="summary-map" x-show="locatedCount > 0">
+                        <div id="summary-map" class="map-container"></div>
+                    </div>
+                    <div class="map-placeholder" x-show="locatedCount === 0">
+                        <span class="ms">map</span>
+                        <span>Sin gastos con ubicación</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ Tus datos ============ -->
+            <section class="screen screen--full" x-show="showDataScreen" x-cloak>
+                <div class="data-header">
+                    <button type="button" @click="showDataScreen = false" aria-label="Volver"><span class="ms">arrow_back</span></button>
+                    <div class="data-header__title">Tus datos</div>
+                </div>
+                <div style="padding: 0 24px 20px">
+                    <div class="info-box info-box--green">
+                        <span class="ms">lock</span>
+                        <div>Todo se queda en este móvil. No hay servidor, no hay cuenta. Si cambias de teléfono, llévate una copia.</div>
+                    </div>
+                </div>
+                <div class="data-actions">
+                    <button type="button" class="data-action" @click="exportDatabase()">
+                        <span class="ms">download</span>
+                        <div class="data-action__body">
+                            <div class="data-action__title">Guardar una copia</div>
+                            <div class="data-action__meta">Un archivo con la hoja activa</div>
+                        </div>
+                        <span class="ms chevron">chevron_right</span>
+                    </button>
+                    <button type="button" class="data-action" @click="importDatabase()">
+                        <span class="ms">upload</span>
+                        <div class="data-action__body">
+                            <div class="data-action__title">Importar una copia</div>
+                            <div class="data-action__meta">Se añade como una hoja nueva</div>
+                        </div>
+                        <span class="ms chevron">chevron_right</span>
+                    </button>
+                </div>
+                <div class="danger-zone">
+                    <div class="danger-zone__label">Zona de peligro</div>
+                    <div class="danger-zone__box">
+                        <div class="danger-zone__text">Borrar la hoja <b x-text="activeSheetName"></b> no se puede deshacer. Guarda una copia antes si tienes dudas.</div>
+                        <button type="button" class="btn-danger" @click="deleteSheet(activeSheetId)">Borrar esta hoja</button>
+                    </div>
+                </div>
+                <div class="data-footer">
+                    <div><a href="faq.html">Preguntas frecuentes</a> · <a href="mailto:bcurtu+gastorade@gmail.com">Escribir a Bosco</a></div>
+                    <div>Gastorade · 2025</div>
+                </div>
+            </section>
+
+            <!-- ============ Barra de pestañas ============ -->
+            <nav class="tabbar" x-show="!showDataScreen">
+                <button type="button" class="tabbar__item" :class="{ active: activeTab === 'add' }" @click="switchTab('add')">
+                    <span class="ms">add_circle</span>
+                    <span>Añadir</span>
+                </button>
+                <button type="button" class="tabbar__item" :class="{ active: activeTab === 'list' }" @click="switchTab('list')">
+                    <span class="ms">receipt_long</span>
+                    <span>Gastos</span>
+                </button>
+                <button type="button" class="tabbar__item" :class="{ active: activeTab === 'summary' }" @click="switchTab('summary')">
+                    <span class="ms">insights</span>
+                    <span>Resumen</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- ============ Hoja: Tus hojas ============ -->
+        <div class="overlay" x-show="sheetsSheetOpen" x-cloak @click="sheetsSheetOpen = false"></div>
+        <div class="bottom-sheet" x-show="sheetsSheetOpen" x-cloak>
+            <div class="bottom-sheet__handle"></div>
+            <div class="bottom-sheet__title">Tus hojas</div>
+            <div class="option-list">
+                <template x-for="sheet in sheets" :key="sheet.id">
+                    <button type="button" class="option-card" :class="{ selected: sheet.id === activeSheetId }" @click="selectSheet(sheet.id)">
+                        <div class="option-card__body">
+                            <div class="option-card__title" x-text="sheet.name"></div>
+                            <div class="option-card__meta" x-text="sheetMeta(sheet)"></div>
+                        </div>
+                        <div class="option-card__value" x-html="formatCurrencyAmount(sheetTotal(sheet), sheetTargetSymbol(sheet), 2)"></div>
+                        <span class="ms check" x-show="sheet.id === activeSheetId">check_circle</span>
+                    </button>
+                </template>
+            </div>
+            <div class="sheet-menu">
+                <button type="button" class="sheet-menu__row" @click="startOnboarding(true)">
+                    <span class="ms">add</span><span>Nueva hoja</span>
+                </button>
+                <button type="button" class="sheet-menu__row" @click="openSettingsSheet()">
+                    <span class="ms">edit</span><span>Ajustes de esta hoja</span><span class="ms chevron">chevron_right</span>
+                </button>
+                <button type="button" class="sheet-menu__row" @click="openDataScreen()">
+                    <span class="ms">database</span><span>Tus datos</span><span class="ms chevron">chevron_right</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ============ Hoja: Ajustes de esta hoja ============ -->
+        <div class="overlay" x-show="settingsSheetOpen" x-cloak @click="settingsSheetOpen = false"></div>
+        <div class="bottom-sheet" x-show="settingsSheetOpen" x-cloak>
+            <div class="bottom-sheet__handle"></div>
+            <div class="bottom-sheet__title">Ajustes de esta hoja</div>
+            <div class="field">
+                <label class="field__label" for="settings-name">Nombre</label>
+                <input id="settings-name" type="text" placeholder="Nombre de la hoja" x-model="settingsName">
+            </div>
+            <div class="field">
+                <label class="field__label" for="settings-target">Tu moneda</label>
+                <div class="select-wrap">
+                    <select id="settings-target" x-model="settingsTarget" :disabled="expenses.length > 0">
                         <template x-for="(currency, code) in supportedCurrencies" :key="code">
-                            <option :value="code" :selected="code === currencies.source.code" x-text="currency.name + ' (' + currency.symbol + ')'"></option>
+                            <option :value="code" x-text="code + ' ' + currency.symbol"></option>
                         </template>
                     </select>
+                    <span class="ms">expand_more</span>
                 </div>
-                <div class="currency-input">
-                    <label>Moneda destino:</label>
-                    <select x-model="currencies.target.code" @change="updateCurrencySymbol('target')" :disabled="expenses.length > 0">
-                        <template x-for="(currency, code) in supportedCurrencies" :key="code">
-                            <option :value="code" :selected="code === currencies.target.code" x-text="currency.name + ' (' + currency.symbol + ')'"></option>
-                        </template>
-                    </select>
-                    <small x-show="expenses.length > 0">La moneda destino queda fija una vez hay gastos registrados.</small>
-                </div>
-                <button @click="saveCurrencies()">Guardar</button>
             </div>
+            <div class="info-box info-box--muted" x-show="expenses.length > 0">
+                <span class="ms">lock</span>
+                <div>Tu moneda queda fija porque esta hoja ya tiene gastos guardados.</div>
+            </div>
+            <button type="button" class="btn-primary" @click="saveSettings()">Guardar</button>
         </div>
 
-        <!-- Calculadora de nuevo gasto -->
-        <div class="expense-calculator" x-show="!editingExpenseId">
-            <h2>Nuevo Gasto</h2>
-            <div class="input-group">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <label style="margin-bottom: 0;">Importe (1 <span x-text="currencies.source.code"></span> = <span x-text="formatExchangeRate(exchangeRate)"></span><span x-text="currencies.target.symbol"></span>)</label>
-                    <button type="button" class="link-button" @click="showCurrencyEditor = !showCurrencyEditor">editar</button>
-                </div>
-                <div class="expense-input-row">
-                    <div class="amount-input">
-                        <div class="expense-tag" @click.stop="showNewExpenseTagEditor = !showNewExpenseTagEditor" style="margin-right: 10px;">
-                            <span x-text="newExpense.tag || '🏷️'"></span>
-                            <div x-show="showNewExpenseTagEditor" class="tag-editor" @click.stop>
-                                <div class="tag-categories">
-                                    <template x-for="category in tagCategories" :key="category.emoji">
-                                        <button
-                                            type="button"
-                                            @click="newExpense.tag = category.emoji; showNewExpenseTagEditor = false"
-                                            :title="category.name"
-                                            class="tag-button"
-                                        >
-                                            <span x-text="category.emoji"></span>
-                                        </button>
-                                    </template>
-                                </div>
-                            </div>
+        <!-- ============ Hoja: Cambiar de moneda ============ -->
+        <div class="overlay" x-show="currencySheetOpen" x-cloak @click="currencySheetOpen = false"></div>
+        <div class="bottom-sheet" x-show="currencySheetOpen" x-cloak>
+            <div class="bottom-sheet__handle"></div>
+            <div class="bottom-sheet__title">¿En qué moneda pagas ahora?</div>
+            <div class="bottom-sheet__subtitle">Cámbiala cuando cruces la frontera. El cambio lo buscamos nosotros.</div>
+            <div class="search-input">
+                <span class="ms">search</span>
+                <input type="text" placeholder="Buscar moneda" x-model="currencyQuery">
+            </div>
+            <div class="option-list">
+                <template x-for="currency in filteredCurrencies" :key="currency.code">
+                    <button type="button" class="option-card" :class="{ selected: currencyCandidate === currency.code }"
+                            @click="currencyCandidate = currency.code">
+                        <div class="option-card__body">
+                            <div class="option-card__title" x-text="currency.name + ' · ' + currency.code"></div>
+                            <div class="option-card__meta" x-text="currencySubtitle(currency.code)"></div>
                         </div>
-                        <input type="number" x-model="newExpense.amount" @input="updateConversion()" style="padding-left: 10px;">
-                        <span class="converted-amount" x-text="formatTargetAmount(convertedAmount)"></span>
-                    </div>
-                    <div class="units-control">
-                        <button @click="decrementUnits()">-</button>
-                        <span x-text="newExpense.units"></span>
-                        <button @click="incrementUnits()">+</button>
-                    </div>
-                </div>
+                        <span class="ms check" x-show="currencyCandidate === currency.code">check_circle</span>
+                    </button>
+                </template>
             </div>
-
-            <div class="input-group">
-                <label>Nota</label>
-                <input type="text" maxlength="24" x-model="newExpense.note" placeholder="Nota">
+            <div class="info-box info-box--muted">
+                <span class="ms">history</span>
+                <div>Los gastos que ya tienes guardados <b>no cambian</b>: cada uno conserva su moneda y el cambio del día en que lo apuntaste.</div>
             </div>
-
-            <div class="total">
-                <h3>TOTAL</h3>
-                <div x-html="formatSourceAmount(newExpense.amount * newExpense.units)"></div>
-                <div x-html="'(' + formatTargetAmount(newExpense.amount * newExpense.units * exchangeRate) + ')'"></div>
-            </div>
-
-            <div class="action-buttons">
-                <button @click="saveExpense()" class="primary">Guardar</button>
-                <button @click="resetForm()">Cancelar</button>
-            </div>
+            <button type="button" class="btn-primary" @click="applyCurrencyChange()" x-text="currencyCtaLabel"></button>
         </div>
 
-        <!-- Lista de gastos -->
-        <div class="expenses-list">
-            <h2>Gastos Guardados</h2>
-
-            <template x-for="(day, index) in groupedExpenses" :key="activeSheetId + '_' + day.dateKey">
-                <div class="day-group">
-                    <div class="day-header" @click="toggleDayExpansion(day.dateKey)">
-                        <div class="day-header-content">
-                            <span class="expand-icon" x-text="isDayExpanded(day.dateKey) ? '▼' : '▶'"></span>
-                            <h3 x-text="day.date"></h3>
-                        </div>
-                        <span x-html="'TOTAL: ' + formatTargetAmount(day.totalTarget)"></span>
-                    </div>
-
-                    <div class="day-expenses" x-show="isDayExpanded(day.dateKey)">
-                        <template x-for="expense in day.expenses" :key="expense.id">
-                            <div class="expense-item" :class="{ 'editing': editingExpenseId === expense.id }">
-                                <!-- Normal view -->
-                                <div x-show="editingExpenseId !== expense.id" class="expense-content">
-                                    <div class="expense-main">
-                                        <div class="expense-tag" @click.stop="toggleTagEditor(expense.id)">
-                                            <span x-text="expense.tag || '🏷️'"></span>
-                                            <div x-show="showTagEditor === expense.id" class="tag-editor">
-                                                <div class="tag-categories">
-                                                    <template x-for="category in tagCategories" :key="category.emoji">
-                                                        <button
-                                                            @click.stop="saveTag(expense.id, category)"
-                                                            :title="category.name"
-                                                            class="tag-button"
-                                                        >
-                                                            <span x-text="category.emoji"></span>
-                                                        </button>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="expense-details">
-                                            <div class="expense-top">
-                                                <div class="expense-amount">
-                                                    <span x-html="formatCurrencyAmount(expense.amount * expense.units, expense.currency.symbol)"></span>
-                                                    <span class="eur" x-html="'(' + formatTargetAmount(expense.amount * expense.units * expense.exchangeRate) + ')'"></span>
-                                                </div>
-                                                <div class="expense-actions">
-                                                    <button class="icon-button edit" @click="editExpense(expense.id)" title="Editar">✏️</button>
-                                                    <button class="icon-button delete" @click="deleteExpense(expense.id)" title="Borrar">🗑️</button>
-                                                </div>
-                                            </div>
-                                            <div class="expense-meta">
-                                                <span x-text="formatTime(expense.date)"></span>
-                                                <span x-show="expense.units > 1" x-text="expense.units + ' unidades'"></span>
-                                                <span x-show="expense.note" x-text="expense.note"></span>
-                                                <button
-                                                    x-show="expense.coords"
-                                                    @click.stop="showExpenseLocation(expense)"
-                                                    class="map-button"
-                                                    :class="{ 'active': expense.showMap }"
-                                                >
-                                                    📍
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div x-show="expense.coords && expense.showMap" class="expense-map">
-                                    <div :id="'map-' + expense.id" class="map-container"></div>
-                                </div>
-                                <!-- Edit form -->
-                                <div x-show="editingExpenseId === expense.id" class="expense-edit-form">
-                                    <div class="input-group">
-                                        <label>Importe (1 <span x-text="newExpense.currency.code"></span> = <span x-text="formatExchangeRate(newExpense.exchangeRate)"></span><span x-text="currencies.target.symbol"></span>)</label>
-                                        <div class="expense-input-row">
-                                            <div class="amount-input">
-                                                <input type="number" x-model="newExpense.amount" @input="updateConversion()">
-                                                <span class="converted-amount" x-text="formatTargetAmount(convertedAmount)"></span>
-                                            </div>
-                                            <div class="units-control">
-                                                <button @click="decrementUnits()">-</button>
-                                                <span x-text="newExpense.units"></span>
-                                                <button @click="incrementUnits()">+</button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="input-group">
-                                        <label>Nota</label>
-                                        <input type="text" maxlength="24" x-model="newExpense.note" placeholder="Nota">
-                                    </div>
-
-                                    <div class="input-group">
-                                        <label>Fecha y Hora</label>
-                                        <div class="datetime-control">
-                                            <input type="date" x-model="newExpense.dateInput">
-                                            <input type="time" x-model="newExpense.timeInput">
-                                        </div>
-                                    </div>
-
-                                    <div x-show="newExpense.coords" class="expense-map">
-                                        <div :id="'edit-map-' + expense.id" class="map-container"></div>
-                                    </div>
-
-                                    <div class="total">
-                                        <h3>TOTAL</h3>
-                                        <div x-html="formatCurrencyAmount(newExpense.amount * newExpense.units, newExpense.currency.symbol)"></div>
-                                        <div x-html="'(' + formatTargetAmount(newExpense.amount * newExpense.units * newExpense.exchangeRate) + ')'"></div>
-                                    </div>
-
-                                    <div class="action-buttons">
-                                        <button @click="updateExpense()" class="primary">Guardar</button>
-                                        <button @click="cancelEdit()">Cancelar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </template>
-
-            <div class="empty-state" x-show="expenses.length === 0">
-                <p>No hay gastos guardados todavía.</p>
-            </div>
-
-            <!-- Analytics Section -->
-            <div class="analytics-section">
-                <h2>Resumen Total</h2>
-                <div class="total-summary">
-                    <div class="total-amount">
-                        <span x-html="formatCurrencyBreakdown(analytics.totalsByCurrency)"></span>
-                        <span class="eur" x-html="'(' + formatTargetAmount(analytics.totalTarget) + ')'"></span>
-                    </div>
-                </div>
-
-                <h3>Gastos por Etiqueta</h3>
-                <div class="tag-analytics">
-                    <template x-for="tag in analytics.tagsSorted" :key="tag.emoji">
-                        <div class="tag-summary">
-                            <div class="tag-header">
-                                <span class="tag-emoji" x-text="tag.emoji"></span>
-                                <span class="tag-name" x-text="tag.name"></span>
-                                <span class="tag-count" x-text="tag.count + ' gastos'"></span>
-                            </div>
-                            <div class="tag-amounts">
-                                <span x-html="formatCurrencyBreakdown(tag.totalsByCurrency)"></span>
-                                <span class="eur" x-html="'(' + formatTargetAmount(tag.totalTarget) + ')'"></span>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-
-                <div class="summary-map-section" x-show="expenses.some(e => e.coords)">
-                    <h3>Mapa de Gastos</h3>
-                    <div class="summary-map-container">
-                        <div id="summary-map" class="map-container" x-init="setTimeout(() => initSummaryMap(), 100)"></div>
-                    </div>
+        <!-- ============ Hoja: Editar gasto ============ -->
+        <div class="overlay" x-show="editingExpenseId" x-cloak @click="cancelEdit()"></div>
+        <div class="bottom-sheet" x-show="editingExpenseId" x-cloak>
+            <div class="bottom-sheet__handle"></div>
+            <div class="bottom-sheet__title">Editar gasto</div>
+            <div class="field">
+                <label class="field__label" for="edit-amount">Importe en <span x-text="newExpense.currency.code"></span></label>
+                <div class="edit-amount">
+                    <input id="edit-amount" type="text" inputmode="decimal" x-model="newExpense.amount">
+                    <span class="edit-amount__converted" x-html="'= ' + formatTargetAmount(editConvertedUnit)"></span>
                 </div>
             </div>
-        </div>
-
-        <div class="danger-zone">
-            <h3>Zona de Peligro</h3>
-            <div class="danger-actions">
-                <button @click="exportDatabase()" class="secondary-button">
-                    📥 Exportar base de datos
-                </button>
-                <button @click="importDatabase()" class="secondary-button">
-                    📤 Importar base de datos
-                </button>
-                <button @click="resetData()" class="danger-button">
-                    Borrar todos los gastos
+            <div class="edit-units-row">
+                <div class="stepper">
+                    <button type="button" @click="decrementUnits()" aria-label="Menos unidades"><span class="ms">remove</span></button>
+                    <div class="stepper__value" x-text="newExpense.units + (newExpense.units === 1 ? ' ud.' : ' uds.')"></div>
+                    <button type="button" @click="incrementUnits()" aria-label="Más unidades"><span class="ms">add</span></button>
+                </div>
+                <div class="edit-total">
+                    <div class="edit-total__label">Total</div>
+                    <div class="edit-total__value" x-html="formatTargetAmount(editConvertedTotal)"></div>
+                </div>
+            </div>
+            <input class="edit-note" type="text" maxlength="24" placeholder="Nota" x-model="newExpense.note">
+            <div class="edit-datetime">
+                <input type="date" x-model="newExpense.dateInput">
+                <input type="time" x-model="newExpense.timeInput">
+            </div>
+            <div class="tag-row tag-row--flush">
+                <template x-for="category in quickTags" :key="category.emoji">
+                    <button type="button" class="tag-circle" :class="{ selected: newExpense.tag === category.emoji }"
+                            @click="toggleQuickTag(category.emoji)" :title="category.name">
+                        <span x-text="category.emoji"></span>
+                    </button>
+                </template>
+                <button type="button" class="tag-circle tag-circle--more" @click="tagPickerOpen = true" aria-label="Más etiquetas">
+                    <span class="ms">more_horiz</span>
                 </button>
             </div>
+            <div class="edit-location" x-show="newExpense.coords">
+                <span class="ms">location_on</span>
+                <span>Ubicación guardada</span>
+                <button type="button" @click="toggleEditMap()" x-text="editMapVisible ? 'Ocultar mapa' : 'Ver mapa'"></button>
+            </div>
+            <div class="edit-map" x-show="editMapVisible">
+                <div id="edit-sheet-map" class="map-container"></div>
+            </div>
+            <button type="button" class="btn-primary" @click="updateExpense()">Guardar cambios</button>
+            <button type="button" class="btn-danger-text" @click="deleteExpense(editingExpenseId)">Eliminar gasto</button>
         </div>
+
+        <!-- ============ Hoja: Etiquetas ============ -->
+        <div class="overlay overlay--top" x-show="tagPickerOpen" x-cloak @click="tagPickerOpen = false"></div>
+        <div class="bottom-sheet bottom-sheet--top" x-show="tagPickerOpen" x-cloak>
+            <div class="bottom-sheet__handle"></div>
+            <div class="bottom-sheet__title">Etiqueta</div>
+            <div class="tag-grid">
+                <template x-for="category in tagCategories" :key="category.emoji">
+                    <button type="button" :class="{ selected: newExpense.tag === category.emoji }" @click="pickTag(category.emoji)">
+                        <span x-text="category.emoji"></span>
+                        <span x-text="category.name"></span>
+                    </button>
+                </template>
+            </div>
+        </div>
+
     </div>
-    <footer class="app-footer">
-        <div class="nav-links">
-            <a href="index.html" class="nav-link active">Inicio</a>
-            <a href="faq.html" class="nav-link">Preguntas Frecuentes</a>
-        </div>
-        <p>Simplifica tus viajes: Convierte y organiza tus gastos internacionales al instante en tu moneda local.</p>
-        <p>Creado por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</p>
-    </footer>
 </body>
 </html>
