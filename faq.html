@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2c3e50">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
     <meta name="description" content="Preguntas frecuentes sobre Gastorade - Conversor de divisas y gestor de gastos para viajes">
     <title>Preguntas Frecuentes - Gastorade</title>
     <link rel="icon" type="image/jpg" href="gastorade.jpg">
@@ -19,8 +19,10 @@
 
         gtag('config', 'G-G0JQ7P64MS');
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
     <link rel="stylesheet" href="style.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
         // Register Service Worker
         if ('serviceWorker' in navigator) {
@@ -37,108 +39,101 @@
     </script>
 </head>
 <body>
-    <div class="app-container faq-container">
-        <div class="header">
-            <h1>Gastorade</h1>
-        </div>
+    <div class="app">
+        <section class="screen screen--full faq-page">
+            <div class="data-header">
+                <a href="index.html" aria-label="Volver a la aplicación"><span class="ms">arrow_back</span></a>
+                <div class="data-header__title">Preguntas frecuentes</div>
+            </div>
 
-        <div class="faq-content">
-            <h2>Preguntas Frecuentes</h2>
-            
-            <div class="faq-section">
+            <div class="faq-list">
+
                 <div class="faq-item">
                     <h3>¿Qué es Gastorade?</h3>
-                    <p>Gastorade es una aplicación web que te ayuda a gestionar tus gastos durante viajes internacionales, permitiéndote convertir monedas extranjeras a tu moneda local de forma sencilla y organizada.</p>
+                    <p>Una app para apuntar tus gastos de viaje en la moneda del sitio y verlos convertidos a tu moneda al instante. Sin cuentas, sin servidor y sin publicidad: todo vive en tu móvil.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h3>¿Cómo funciona la conversión de monedas?</h3>
-                    <p>Gastorade utiliza tasas de cambio que puedes actualizar manualmente. Para cambiar la tasa, haz clic en el botón de editar junto a la tasa de cambio actual en la página principal.</p>
+                    <h3>¿Qué hay en cada pestaña?</h3>
+                    <p><b>Añadir</b> es la pantalla principal: teclea lo que pone el ticket y verás la conversión en vivo. Puedes ajustar las unidades, poner una nota, elegir una etiqueta y decidir si se guarda dónde estás.</p>
+                    <p><b>Gastos</b> es la lista completa, agrupada por días con el total de cada uno. Arriba puedes filtrar por etiqueta. Desliza una fila para editarla o borrarla, o tócala para abrirla.</p>
+                    <p><b>Resumen</b> muestra el total del viaje, la media de gasto por día, el reparto por etiquetas y un mapa con los gastos que tienen ubicación.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h3>¿Puedo cambiar las monedas?</h3>
-                    <p>Sí, puedes cambiar tanto la moneda de origen como la moneda de destino haciendo clic en los códigos de moneda en la sección de conversión.</p>
+                    <h3>¿Qué son las hojas?</h3>
+                    <p>Cada viaje es una hoja: tiene su nombre, su par de monedas y sus gastos. Puedes tener varias abiertas a la vez (por ejemplo, un viaje en marcha y otros ya cerrados).</p>
+                    <p>Toca el nombre de la hoja en la parte superior de cualquier pestaña para cambiar de hoja, crear una nueva, renombrar la actual o llegar a «Tus datos».</p>
                 </div>
 
                 <div class="faq-item">
-                    <h3>¿Cómo añado un nuevo gasto?</h3>
-                    <p>En la página principal, introduce la cantidad en la moneda extranjera, opcionalmente ajusta el número de unidades, y haz clic en "Guardar". También puedes añadir una ubicación si lo deseas.</p>
+                    <h3>¿Cómo funciona el cambio de divisa?</h3>
+                    <p>El tipo de cambio se busca solo una vez al día cuando hay conexión (lo verás arriba a la derecha en la pantalla de Añadir, por ejemplo «1 € = 162,40 ¥»).</p>
+                    <p>Cada gasto <b>congela el cambio del día en que lo apuntaste</b>: si el cambio se mueve después, tus gastos antiguos no se recalculan. Así el total refleja lo que de verdad te costó.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h3>¿Qué significan los iconos en cada gasto?</h3>
-                    <p>
-                        <ul>
-                            <li>🏷️ - Permite asignar una categoría al gasto</li>
-                            <li>✏️ - Editar el gasto</li>
-                            <li>🗑️ - Eliminar el gasto</li>
-                            <li>📍 - Ver la ubicación del gasto en un mapa (si se registró ubicación)</li>
-                        </ul>
-                    </p>
+                    <h3>¿Puedo cambiar de moneda a mitad de viaje?</h3>
+                    <p>Sí. Toca el tipo de cambio en la pantalla de Añadir y elige la nueva moneda del sitio (útil cuando cruzas una frontera). Los gastos ya guardados conservan su moneda y su cambio.</p>
+                    <p><b>Tu moneda</b> (en la que ves los totales) queda fija en cuanto la hoja tiene el primer gasto guardado.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h3>¿Cómo funcionan las categorías?</h3>
-                    <p>Las categorías te permiten organizar tus gastos por tipo. Para asignar una categoría:</p>
-                    <p>
-                        <ol>
-                            <li>Haz clic en el icono 🏷️ junto a cualquier gasto</li>
-                            <li>Se abrirá un menú con diferentes emojis que representan categorías</li>
-                            <li>Selecciona el emoji que mejor represente el tipo de gasto</li>
-                        </ol>
-                    </p>
-                    <p>Las categorías disponibles incluyen:</p>
-                    <p>
-                        <ul>
-                            <li>🍽️ - Comida en restaurantes</li>
-                            <li>🍿 - Snacks y aperitivos</li>
-                            <li>🏨 - Alojamiento</li>
-                            <li>🚕 - Transporte</li>
-                            <li>🎭 - Entretenimiento y actividades</li>
-                            <li>🛍️ - Compras</li>
-                            <li>🧴 - Artículos de higiene y cuidado personal</li>
-                            <li>🏛️ - Entradas a museos y monumentos</li>
-                            <li>Y muchas más...</li>
-                        </ul>
-                    </p>
-                    <p>Categorizar tus gastos te ayuda a tener una mejor visión de en qué estás gastando tu dinero durante el viaje, lo que facilita llevar un control de tu presupuesto.</p>
+                    <h3>¿Qué categorías hay?</h3>
+                    <ul>
+                        <li>🍽️ <b>Comida</b> — restaurantes, bares y bebidas</li>
+                        <li>🍦 <b>Snacks</b> — antojos y picoteo</li>
+                        <li>🛍️ <b>Compras</b> — ropa, farmacia, souvenirs para ti</li>
+                        <li>🎟️ <b>Entradas</b> — museos, monumentos, espectáculos</li>
+                        <li>🎢 <b>Experiencias</b> — tours, actividades, aventuras</li>
+                        <li>🎁 <b>Regalos</b> — lo que compras para otros</li>
+                        <li>🚕 <b>Transporte</b> — taxis, trenes, metro, vuelos</li>
+                        <li>🏨 <b>Alojamiento</b> — hoteles y estancias</li>
+                        <li>🏷️ <b>Otros</b> — todo lo demás</li>
+                    </ul>
+                    <p>Etiqueta cada gasto con un toque al añadirlo (o después, al editarlo) y el Resumen te dirá en qué se va el dinero.</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>¿Para qué sirve «Guardar dónde estoy»?</h3>
+                    <p>Si el interruptor está activado, cada gasto guarda las coordenadas de dónde lo apuntaste. Luego, en el Resumen, verás el mapa del viaje con todos tus gastos localizados. Puedes apagarlo cuando quieras; la ubicación nunca sale de tu dispositivo.</p>
                 </div>
 
                 <div class="faq-item">
                     <h3>¿Mis datos están seguros?</h3>
-                    <p>Todos tus datos se almacenan localmente en tu dispositivo y no se envían a ningún servidor. Esto significa que tus datos son privados, pero también que debes hacer copias de seguridad si cambias de dispositivo.</p>
+                    <p>Todo se guarda localmente en tu móvil: no hay servidor, ni cuenta, ni sincronización. Nadie más puede ver tus gastos.</p>
+                    <p>La otra cara de la moneda: si borras los datos del navegador o cambias de teléfono, los gastos no viajan solos. En «Tus datos» puedes <b>guardar una copia</b> (un archivo con la hoja activa) e <b>importarla</b> en el dispositivo nuevo, donde se añadirá como una hoja más.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h3>¿Funciona sin conexión a internet?</h3>
-                    <p>Sí, Gastorade funciona completamente sin conexión una vez cargada la página. Puedes añadir, editar y eliminar gastos sin necesidad de conexión a internet.</p>
+                    <h3>¿Cómo borro una hoja?</h3>
+                    <p>En «Tus datos» (desde el selector de hojas) está la zona de peligro con el botón «Borrar esta hoja». No se puede deshacer, así que guarda una copia antes si tienes dudas.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h3>¿Cómo puedo borrar todos mis datos?</h3>
-                    <p>En la parte inferior de la página principal encontrarás la "Zona de Peligro" con un botón para reiniciar todos los datos. Ten en cuenta que esta acción no se puede deshacer.</p>
+                    <h3>¿Funciona sin conexión?</h3>
+                    <p>Sí. Una vez cargada, la app funciona completamente sin internet: puedes añadir, editar y borrar gastos donde no haya cobertura. Solo necesita conexión para actualizar el tipo de cambio del día.</p>
                 </div>
 
                 <div class="faq-item">
-                    <h3>¿Cómo puedo contactar con el desarrollador?</h3>
-                    <p>Puedes contactar con el desarrollador enviando un correo electrónico a <a href="mailto:bcurtu+gastorade@gmail.com">bcurtu+gastorade@gmail.com</a>.</p>
+                    <h3>¿Puedo instalarla como una app?</h3>
+                    <p>Sí, es una PWA. En Android, abre el menú del navegador y elige «Añadir a pantalla de inicio» (o «Instalar aplicación»). En iPhone, toca el botón de compartir en Safari y luego «Añadir a pantalla de inicio». Se abrirá a pantalla completa, como una app más.</p>
                 </div>
+
+                <div class="faq-item">
+                    <h3>¿Cómo contacto con el desarrollador?</h3>
+                    <p>Escribe a <a href="mailto:bcurtu+gastorade@gmail.com">bcurtu+gastorade@gmail.com</a> con dudas, fallos o ideas.</p>
+                </div>
+
             </div>
-        </div>
 
-        <div class="back-to-app">
-            <a href="index.html" class="button primary">Volver a la aplicación</a>
-        </div>
+            <div class="app-credits">
+                <img src="gastorade.jpg" alt="" class="app-credits__logo">
+                <div class="app-credits__name">Gastorade</div>
+                <div>Convierte y organiza tus gastos de viaje.</div>
+                <div>Hecho por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</div>
+            </div>
+        </section>
     </div>
-
-    <footer class="app-footer">
-        <div class="nav-links">
-            <a href="index.html" class="nav-link">Inicio</a>
-            <a href="faq.html" class="nav-link active">Preguntas Frecuentes</a>
-        </div>
-        <p>Simplifica tus viajes: Convierte y organiza tus gastos internacionales al instante en tu moneda local.</p>
-        <p>Creado por <a href="mailto:bcurtu+gastorade@gmail.com">Bosco Curtu</a> · 2025</p>
-    </footer>
 </body>
 </html>

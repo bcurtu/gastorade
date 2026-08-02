@@ -2,6 +2,7 @@ const CACHE_NAME = 'gastorade-v7';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/faq.html',
   '/style.css',
   '/app.js',
   '/manifest.json',
