@@ -125,6 +125,34 @@ document.addEventListener('alpine:init', () => {
                     this.swipedExpenseId = null;
                 }
             });
+
+            // Botón "atrás" del sistema (Android/gestos): cerrar hojas y volver
+            // a la pestaña Añadir por niveles en vez de salir de la app.
+            // Mantenemos una entrada centinela en el historial; cada "atrás" la
+            // consume, cerramos un nivel y la volvemos a poner. Si no queda
+            // nada que cerrar, dejamos que el "atrás" salga de verdad.
+            history.pushState({ gastorade: true }, '');
+            window.addEventListener('popstate', () => {
+                if (this.handleSystemBack()) {
+                    history.pushState({ gastorade: true }, '');
+                } else {
+                    history.back();
+                }
+            });
+        },
+
+        // Cierra el nivel de UI superior. Devuelve false si ya estamos en la
+        // pantalla base (Añadir, sin hojas abiertas): ahí "atrás" sale de la app.
+        handleSystemBack() {
+            if (this.tagPickerOpen) { this.tagPickerOpen = false; return true; }
+            if (this.editingExpenseId) { this.cancelEdit(); return true; }
+            if (this.currencySheetOpen) { this.currencySheetOpen = false; return true; }
+            if (this.settingsSheetOpen) { this.settingsSheetOpen = false; return true; }
+            if (this.sheetsSheetOpen) { this.sheetsSheetOpen = false; return true; }
+            if (this.onboardingActive && this.onboardingCancelable) { this.onboardingActive = false; return true; }
+            if (this.showDataScreen) { this.showDataScreen = false; return true; }
+            if (this.activeTab !== 'add' && !this.onboardingActive) { this.switchTab('add'); return true; }
+            return false;
         },
 
         // ------------------------------------------------------------
